@@ -1,0 +1,41 @@
+:host {
+  display: block;
+}
+
+.project-details-page {
+  animation: fade-in 0.3s ease-in-out;
+}
+
+.loading-container,
+.not-found-container {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.screenshot-item {
+  overflow: hidden;
+  border-radius: 0.5rem;
+}
+
+.screenshot-item img {
+  transition: transform 0.3s ease;
+}
+
+.screenshot-item:hover img {
+  transform: scale(1.05);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

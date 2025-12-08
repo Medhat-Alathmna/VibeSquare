@@ -1,0 +1,93 @@
+<!-- Grid Layout -->
+@if (layout() === 'grid') {
+  <div class="grid-layout grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+    @for (project of projects(); track project.id) {
+      <div class="grid-item">
+        <app-gallery-card [project]="project"></app-gallery-card>
+      </div>
+    }
+  </div>
+}
+
+<!-- Masonry Layout -->
+@if (layout() === 'masonry') {
+  <div class="masonry-layout columns-1 sm:columns-2 lg:columns-3 xl:columns-4 gap-6 space-y-6">
+    @for (project of projects(); track project.id; let i = $index) {
+      <div class="masonry-item break-inside-avoid animate-fade-in"
+           [style.animation-delay.ms]="i * 50">
+        <app-gallery-card [project]="project"></app-gallery-card>
+      </div>
+    }
+  </div>
+}
+
+<!-- Carousel Layout -->
+@if (layout() === 'carousel') {
+  <div class="carousel-layout relative">
+    <!-- Carousel Container -->
+    <div class="carousel-container overflow-hidden rounded-xl">
+      <div
+        class="carousel-track flex transition-transform duration-500 ease-out"
+        [style.transform]="getCarouselTransform()">
+        @for (project of projects(); track project.id) {
+          <div class="carousel-slide flex-shrink-0 w-full sm:w-1/2 lg:w-1/3 px-3">
+            <app-gallery-card [project]="project"></app-gallery-card>
+          </div>
+        }
+      </div>
+    </div>
+
+    <!-- Navigation Arrows -->
+    <button
+      (click)="prevSlide()"
+      [disabled]="!canGoPrev()"
+      class="carousel-nav carousel-nav-prev absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4
+             w-12 h-12 rounded-full bg-dark-surface border border-dark-border
+             flex items-center justify-center transition-all duration-200
+             hover:border-secondary/50 hover:bg-dark-surface/80
+             disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-dark-border">
+      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+      </svg>
+    </button>
+
+    <button
+      (click)="nextSlide()"
+      [disabled]="!canGoNext()"
+      class="carousel-nav carousel-nav-next absolute right-0 top-1/2 -translate-y-1/2 translate-x-4
+             w-12 h-12 rounded-full bg-dark-surface border border-dark-border
+             flex items-center justify-center transition-all duration-200
+             hover:border-secondary/50 hover:bg-dark-surface/80
+             disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-dark-border">
+      <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+      </svg>
+    </button>
+
+    <!-- Dots Indicator -->
+    <div class="carousel-dots flex justify-center gap-2 mt-6">
+      @for (project of projects(); track project.id; let i = $index) {
+        <button
+          (click)="goToSlide(i)"
+          class="dot w-2 h-2 rounded-full transition-all duration-300"
+          [class.bg-secondary]="i === currentSlide()"
+          [class.w-6]="i === currentSlide()"
+          [class.bg-dark-border]="i !== currentSlide()"
+          [class.hover:bg-secondary/50]="i !== currentSlide()">
+        </button>
+      }
+    </div>
+  </div>
+}
+
+<!-- Empty State -->
+@if (projects().length === 0) {
+  <div class="empty-state flex flex-col items-center justify-center py-20 text-center">
+    <svg class="w-16 h-16 text-gray-600 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+            d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+    </svg>
+    <h3 class="text-xl font-display font-semibold text-white mb-2">No projects found</h3>
+    <p class="text-gray-400">Try adjusting your filters or search terms</p>
+  </div>
+}

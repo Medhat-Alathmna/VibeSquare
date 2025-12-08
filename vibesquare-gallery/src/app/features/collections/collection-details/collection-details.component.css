@@ -1,0 +1,44 @@
+:host {
+  display: block;
+}
+
+.collection-details-page {
+  min-height: calc(100vh - 64px);
+  animation: fade-in 0.3s ease-in-out;
+}
+
+.loading-container,
+.not-found-container {
+  min-height: 60vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.featured-badge {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: rgba(23, 255, 220, 0.1);
+  border: 1px solid rgba(23, 255, 220, 0.3);
+  border-radius: 0.5rem;
+  color: #17ffdc;
+  font-size: 0.875rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

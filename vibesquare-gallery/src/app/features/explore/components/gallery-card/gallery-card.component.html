@@ -1,0 +1,223 @@
+<div class="gallery-card relative cursor-pointer">
+  <!-- Card Image with Hover Overlay -->
+  <div
+    class="card-image relative overflow-hidden rounded-xl aspect-[4/3] group"
+    (click)="openModal()">
+    <img
+      [src]="project().thumbnail"
+      [alt]="project().title"
+      (load)="imageLoaded.set(true)"
+      class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+      [class.opacity-0]="!imageLoaded()"
+      [class.opacity-100]="imageLoaded()" />
+
+    <!-- Loading skeleton -->
+    @if (!imageLoaded()) {
+      <div class="absolute inset-0 bg-dark-surface animate-pulse"></div>
+    }
+
+    <!-- Hover Overlay - Shows on hover -->
+    <div class="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-black/60
+                opacity-0 group-hover:opacity-100 transition-opacity duration-300
+                flex flex-col justify-between p-4">
+      <!-- Top: Title & Framework -->
+      <div class="flex items-start justify-between">
+        <h3 class="text-lg font-display font-bold text-white line-clamp-2 pr-2">
+          {{ project().title }}
+        </h3>
+        <span class="px-2 py-1 text-xs font-semibold bg-secondary/20 text-secondary
+                     border border-secondary/30 rounded-md backdrop-blur-sm flex-shrink-0">
+          {{ project().framework }}
+        </span>
+      </div>
+
+      <!-- Bottom: Stats -->
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-4 text-sm text-white/90">
+          <!-- Downloads -->
+          <div class="flex items-center gap-1.5">
+            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+            </svg>
+            <span>{{ formatNumber(project().downloads) }}</span>
+          </div>
+
+          <!-- Likes -->
+          <div class="flex items-center gap-1.5">
+            <svg class="w-4 h-4 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+              <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/>
+            </svg>
+            <span>{{ formatNumber(project().likes) }}</span>
+          </div>
+        </div>
+
+        <!-- Click hint -->
+        <span class="text-xs text-white/60">Click to view</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Modal on Click -->
+  @if (isModalOpen()) {
+    <div
+      class="modal-overlay"
+      (click)="closeModal()">
+      <!-- Modal Content -->
+      <div
+        class="modal-content"
+        (click)="$event.stopPropagation()">
+
+        <!-- Left: Image -->
+        <div class="modal-image w-1/2 relative overflow-hidden">
+          <img
+            [src]="project().thumbnail"
+            [alt]="project().title"
+            class="w-full h-full object-cover" />
+
+          <!-- Gradient overlay -->
+          <div class="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-dark-surface/50"></div>
+
+          <!-- Framework Badge -->
+          <div class="absolute top-4 left-4">
+            <span class="px-3 py-1.5 text-sm font-semibold bg-secondary/20 text-secondary border border-secondary/30 rounded-lg backdrop-blur-sm">
+              {{ project().framework }}
+            </span>
+          </div>
+        </div>
+
+        <!-- Right: Details -->
+        <div class="modal-details w-1/2 p-6 flex flex-col justify-between">
+          <!-- Header -->
+          <div>
+            <!-- Title -->
+            <h3 class="text-2xl font-display font-bold text-white mb-3">
+              {{ project().title }}
+            </h3>
+
+            <!-- Category -->
+            <div class="flex items-center gap-2 mb-4">
+              <span class="text-sm text-gray-400">Category:</span>
+              <span class="px-3 py-1 text-sm font-medium bg-dark-border/50 text-gray-300 rounded-lg">
+                {{ project().category }}
+              </span>
+            </div>
+
+            <!-- Tags -->
+            <div class="mb-4">
+              <span class="text-sm text-gray-400 block mb-2">Tags:</span>
+              <div class="flex flex-wrap gap-2">
+                @for (tag of project().tags.slice(0, 4); track tag) {
+                  <span class="px-3 py-1 text-sm bg-secondary/10 text-secondary/90 rounded-lg border border-secondary/20">
+                    {{ tag }}
+                  </span>
+                }
+              </div>
+            </div>
+
+            <!-- Stats -->
+            <div class="flex items-center gap-6 text-sm text-gray-400 mt-4 pt-4 border-t border-dark-border">
+              <!-- Downloads -->
+              <div class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10"/>
+                </svg>
+                <span class="text-white font-medium">{{ formatNumber(project().downloads) }}</span>
+              </div>
+
+              <!-- Views -->
+              <div class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+                <span class="text-white font-medium">{{ formatNumber(project().views) }}</span>
+              </div>
+
+              <!-- Likes -->
+              <div class="flex items-center gap-2">
+                <svg class="w-5 h-5 text-red-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/>
+                </svg>
+                <span class="text-white font-medium">{{ formatNumber(project().likes) }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Action Buttons -->
+          <div class="flex flex-col gap-3 mt-6">
+            <!-- View Details Button -->
+            <button
+              (click)="navigateToDetails($event)"
+              class="flex items-center justify-center gap-2 w-full px-4 py-3
+                     text-sm font-semibold rounded-xl transition-all duration-200
+                     bg-secondary text-dark-bg
+                     hover:bg-secondary/90 hover:shadow-lg hover:shadow-secondary/30">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                      d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+              <span>View Details</span>
+            </button>
+
+            <!-- Copy Prompt & Download Row -->
+            <div class="flex gap-3">
+              <!-- Copy Prompt Button -->
+              <button
+                (click)="copyPrompt($event)"
+                class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5
+                       text-sm font-medium rounded-xl transition-all duration-200
+                       bg-dark-border/50 text-white border border-dark-border
+                       hover:bg-secondary/10 hover:text-secondary hover:border-secondary/30">
+                @if (copySuccess()) {
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                  </svg>
+                  <span>Copied!</span>
+                } @else {
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                  </svg>
+                  <span>Copy Prompt</span>
+                }
+              </button>
+
+              <!-- Download Button -->
+              @if (project().downloadUrl) {
+                <button
+                  (click)="downloadProject($event)"
+                  class="flex-1 flex items-center justify-center gap-2 px-4 py-2.5
+                         text-sm font-medium rounded-xl transition-all duration-200
+                         bg-dark-border/50 text-white border border-dark-border
+                         hover:bg-secondary/10 hover:text-secondary hover:border-secondary/30">
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                          d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                  </svg>
+                  <span>Download</span>
+                </button>
+              }
+            </div>
+          </div>
+        </div>
+
+        <!-- Close Button -->
+        <button
+          (click)="closeModal()"
+          class="absolute top-4 right-4 w-8 h-8 flex items-center justify-center
+                 rounded-full bg-black/50 text-white/80 hover:bg-black/70 hover:text-white
+                 transition-colors duration-200">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  }
+</div>

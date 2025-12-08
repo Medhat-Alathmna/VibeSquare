@@ -1,0 +1,65 @@
+<div class="hero-container">
+  <!-- Background Image with Blur -->
+  <div
+    class="hero-background"
+    [style.background-image]="'url(' + project.thumbnail + ')'">
+    <div class="hero-overlay"></div>
+  </div>
+
+  <!-- Content -->
+  <div class="hero-content">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-16 relative z-10">
+      <!-- Framework Badge -->
+      <div class="mb-4">
+        <span class="px-3 py-1.5 text-sm font-medium bg-secondary/20 backdrop-blur-sm text-secondary border border-secondary/30 rounded-lg">
+          {{ project.framework }}
+        </span>
+      </div>
+
+      <!-- Title -->
+      <h1 class="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-white mb-4 max-w-4xl">
+        {{ project.title }}
+      </h1>
+
+      <!-- Short Description -->
+      <p class="text-lg md:text-xl text-gray-300 mb-8 max-w-3xl">
+        {{ project.shortDescription }}
+      </p>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-wrap gap-3">
+        <app-button
+          *ngIf="project.demoUrl"
+          variant="secondary"
+          size="lg"
+          (click)="openDemo()">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+          </svg>
+          View Live Demo
+        </app-button>
+
+        <app-button
+          variant="outline"
+          size="lg"
+          (click)="copyPrompt()">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+          </svg>
+          Copy Prompt
+        </app-button>
+
+        <app-button
+          *ngIf="project.downloadUrl"
+          variant="outline"
+          size="lg"
+          (click)="downloadProject()">
+          <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M9 19l3 3m0 0l3-3m-3 3V10" />
+          </svg>
+          Download
+        </app-button>
+      </div>
+    </div>
+  </div>
+</div>

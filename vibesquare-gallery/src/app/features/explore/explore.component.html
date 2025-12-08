@@ -1,0 +1,59 @@
+<div class="explore-page">
+  <!-- Filter Bar -->
+  <app-filter-bar></app-filter-bar>
+
+  <!-- Main Content -->
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <!-- Results Header -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div>
+        <h1 class="text-3xl font-display font-bold text-white mb-2">
+          Explore Projects
+        </h1>
+        <p class="text-gray-400">
+          {{ filteredProjects().length }}
+          {{ filteredProjects().length === 1 ? 'project' : 'projects' }} found
+          @if (filterState().searchQuery) {
+            <span class="text-secondary">
+              for "{{ filterState().searchQuery }}"
+            </span>
+          }
+        </p>
+      </div>
+
+      <!-- Layout Switcher -->
+      <app-layout-switcher (layoutChange)="onLayoutChange($event)"></app-layout-switcher>
+    </div>
+
+    <!-- Active Filters -->
+    @if (filterState().frameworks.length > 0 || filterState().categories.length > 0 || filterState().tags.length > 0) {
+      <div class="mb-6 flex flex-wrap gap-2">
+        <span class="text-sm text-gray-400">Active filters:</span>
+
+        @for (framework of filterState().frameworks; track framework) {
+          <span class="px-3 py-1 text-xs font-medium bg-secondary/10 text-secondary border border-secondary/30 rounded-full">
+            {{ framework }}
+          </span>
+        }
+
+        @for (category of filterState().categories; track category) {
+          <span class="px-3 py-1 text-xs font-medium bg-secondary/10 text-secondary border border-secondary/30 rounded-full">
+            {{ category }}
+          </span>
+        }
+
+        @for (tag of filterState().tags; track tag) {
+          <span class="px-3 py-1 text-xs font-medium bg-secondary/10 text-secondary border border-secondary/30 rounded-full">
+            {{ tag }}
+          </span>
+        }
+      </div>
+    }
+
+    <!-- Gallery Grid -->
+    <app-gallery-grid
+      [projects]="filteredProjects()"
+      [layout]="currentLayout()">
+    </app-gallery-grid>
+  </div>
+</div>

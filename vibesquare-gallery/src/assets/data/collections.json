@@ -1,0 +1,42 @@
+[
+  {
+    "id": "col-001",
+    "title": "Best Dashboards",
+    "description": "Top-rated dashboard designs with exceptional data visualization and user experience",
+    "thumbnail": "/assets/images/collections/dashboards.jpg",
+    "projectIds": ["proj-001", "proj-004", "proj-008", "proj-010"],
+    "tags": ["dashboard", "analytics", "data-viz"],
+    "createdAt": "2025-11-01T00:00:00Z",
+    "featured": true
+  },
+  {
+    "id": "col-002",
+    "title": "Stunning Landing Pages",
+    "description": "Eye-catching landing pages that convert visitors into customers",
+    "thumbnail": "/assets/images/collections/landing-pages.jpg",
+    "projectIds": ["proj-002", "proj-005", "proj-006"],
+    "tags": ["landing-page", "marketing", "conversion"],
+    "createdAt": "2025-11-05T00:00:00Z",
+    "featured": true
+  },
+  {
+    "id": "col-003",
+    "title": "Dark Mode Beauties",
+    "description": "Projects with exceptional dark theme implementations and neon accents",
+    "thumbnail": "/assets/images/collections/dark-mode.jpg",
+    "projectIds": ["proj-001", "proj-003", "proj-008"],
+    "tags": ["dark-mode", "ui", "design"],
+    "createdAt": "2025-11-10T00:00:00Z",
+    "featured": false
+  },
+  {
+    "id": "col-004",
+    "title": "Modern E-commerce",
+    "description": "State-of-the-art online shopping experiences with smooth UX",
+    "thumbnail": "/assets/images/collections/ecommerce.jpg",
+    "projectIds": ["proj-005", "proj-012"],
+    "tags": ["ecommerce", "shopping", "retail"],
+    "createdAt": "2025-11-15T00:00:00Z",
+    "featured": false
+  }
+]

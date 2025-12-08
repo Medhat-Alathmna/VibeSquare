@@ -1,0 +1,103 @@
+<div class="layout-switcher relative" (clickOutside)="closeDropdown()">
+  <!-- Dropdown Trigger -->
+  <button
+    (click)="toggleDropdown()"
+    class="flex items-center gap-2 px-4 py-2.5 rounded-lg
+           bg-dark-surface border border-dark-border
+           hover:border-secondary/30 hover:bg-dark-surface/80
+           transition-all duration-200 min-w-[140px]">
+
+    <!-- Current Layout Icon -->
+    <span class="layout-icon">
+      @switch (currentLayout.icon) {
+        @case ('grid') {
+          <svg class="w-4 h-4 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+          </svg>
+        }
+        @case ('masonry') {
+          <svg class="w-4 h-4 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 12a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z"/>
+          </svg>
+        }
+        @case ('carousel') {
+          <svg class="w-4 h-4 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/>
+          </svg>
+        }
+      }
+    </span>
+
+    <!-- Label -->
+    <span class="text-sm font-medium text-white flex-1 text-left">
+      {{ currentLayout.label }}
+    </span>
+
+    <!-- Arrow -->
+    <svg
+      class="w-4 h-4 text-gray-400 transition-transform duration-200"
+      [class.rotate-180]="isOpen()"
+      fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+    </svg>
+  </button>
+
+  <!-- Dropdown Menu -->
+  @if (isOpen()) {
+    <div class="dropdown-menu absolute top-full left-0 mt-2 w-full
+                bg-dark-surface border border-dark-border rounded-lg
+                shadow-xl shadow-black/30 overflow-hidden z-50
+                animate-slide-up">
+      @for (layout of layouts; track layout.value) {
+        <button
+          (click)="selectLayout(layout.value)"
+          class="flex items-center gap-3 w-full px-4 py-3
+                 hover:bg-dark-border/30 transition-colors duration-150
+                 text-left"
+          [class.bg-secondary/10]="layout.value === selectedLayout()">
+
+          <!-- Icon -->
+          <span class="layout-icon">
+            @switch (layout.icon) {
+              @case ('grid') {
+                <svg class="w-4 h-4" [class.text-secondary]="layout.value === selectedLayout()" [class.text-gray-400]="layout.value !== selectedLayout()" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                </svg>
+              }
+              @case ('masonry') {
+                <svg class="w-4 h-4" [class.text-secondary]="layout.value === selectedLayout()" [class.text-gray-400]="layout.value !== selectedLayout()" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M4 5a1 1 0 011-1h4a1 1 0 011 1v5a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM14 5a1 1 0 011-1h4a1 1 0 011 1v3a1 1 0 01-1 1h-4a1 1 0 01-1-1V5zM4 15a1 1 0 011-1h4a1 1 0 011 1v4a1 1 0 01-1 1H5a1 1 0 01-1-1v-4zM14 12a1 1 0 011-1h4a1 1 0 011 1v7a1 1 0 01-1 1h-4a1 1 0 01-1-1v-7z"/>
+                </svg>
+              }
+              @case ('carousel') {
+                <svg class="w-4 h-4" [class.text-secondary]="layout.value === selectedLayout()" [class.text-gray-400]="layout.value !== selectedLayout()" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"/>
+                </svg>
+              }
+            }
+          </span>
+
+          <!-- Label -->
+          <span class="text-sm font-medium"
+                [class.text-secondary]="layout.value === selectedLayout()"
+                [class.text-white]="layout.value !== selectedLayout()">
+            {{ layout.label }}
+          </span>
+
+          <!-- Check mark for selected -->
+          @if (layout.value === selectedLayout()) {
+            <svg class="w-4 h-4 text-secondary ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+            </svg>
+          }
+        </button>
+      }
+    </div>
+  }
+</div>

@@ -1,0 +1,36 @@
+<div class="code-section" *ngIf="codeFiles && codeFiles.length > 0">
+  <h2 class="text-2xl font-display font-bold text-white mb-4">Source Code</h2>
+
+  <!-- Tabs -->
+  <div class="tabs-container">
+    <div class="tabs-list">
+      <button
+        *ngFor="let file of codeFiles; let i = index"
+        (click)="selectFile(i)"
+        [class.active]="selectedFileIndex() === i"
+        class="tab-button">
+        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+          <path fill-rule="evenodd" d="M4 4a2 2 0 012-2h4.586A2 2 0 0112 2.586L15.414 6A2 2 0 0116 7.414V16a2 2 0 01-2 2H6a2 2 0 01-2-2V4z" clip-rule="evenodd" />
+        </svg>
+        {{ file.filename }}
+      </button>
+    </div>
+  </div>
+
+  <!-- Code Content -->
+  <div class="code-content">
+    <app-code-viewer
+      *ngIf="selectedFile"
+      [code]="selectedFile.content"
+      [language]="selectedFile.language">
+    </app-code-viewer>
+  </div>
+</div>
+
+<!-- No Code Available -->
+<div *ngIf="!codeFiles || codeFiles.length === 0" class="no-code">
+  <svg class="w-12 h-12 mx-auto mb-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4" />
+  </svg>
+  <p class="text-gray-400 text-center">No source code available for this project</p>
+</div>

@@ -1,0 +1,79 @@
+<!-- Loading State -->
+<div *ngIf="loading()" class="loading-container">
+  <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-secondary mx-auto"></div>
+  <p class="text-gray-400 mt-4 text-center">Loading project...</p>
+</div>
+
+<!-- Not Found State -->
+<div *ngIf="notFound() && !loading()" class="not-found-container">
+  <svg class="w-24 h-24 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M9 10h.01M15 10h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+  </svg>
+  <h2 class="text-2xl font-display font-bold text-white mb-2 text-center">Project Not Found</h2>
+  <p class="text-gray-400 mb-6 text-center">The project you're looking for doesn't exist.</p>
+  <div class="text-center">
+    <button
+      (click)="goBack()"
+      class="px-6 py-3 bg-secondary text-black font-medium rounded-lg hover:bg-secondary/90 transition-colors">
+      Back to Explore
+    </button>
+  </div>
+</div>
+
+<!-- Project Content -->
+<div *ngIf="project() && !loading()" class="project-details-page">
+  <!-- Hero Section -->
+  <app-project-hero [project]="project()!"></app-project-hero>
+
+  <!-- Back Button -->
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-6">
+    <button
+      (click)="goBack()"
+      class="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      Back to Explore
+    </button>
+  </div>
+
+  <!-- Main Content Grid -->
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 pb-12">
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <!-- Left Column (2/3) -->
+      <div class="lg:col-span-2 space-y-8">
+        <!-- Description -->
+        <div>
+          <h2 class="text-2xl font-display font-bold text-white mb-4">About</h2>
+          <p class="text-gray-300 leading-relaxed">{{ project()!.description }}</p>
+        </div>
+
+        <!-- Screenshots Gallery -->
+        <div *ngIf="project()!.screenshots && project()!.screenshots.length > 0">
+          <h2 class="text-2xl font-display font-bold text-white mb-4">Screenshots</h2>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div
+              *ngFor="let screenshot of project()!.screenshots"
+              class="screenshot-item group">
+              <img
+                [src]="screenshot"
+                [alt]="project()!.title"
+                class="w-full h-auto rounded-lg border border-dark-border group-hover:border-secondary/50 transition-all duration-300" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Prompt Viewer -->
+        <app-prompt-viewer [prompt]="project()!.prompt"></app-prompt-viewer>
+
+        <!-- Code Tabs -->
+        <app-code-tabs [codeFiles]="project()!.codeFiles || []"></app-code-tabs>
+      </div>
+
+      <!-- Right Column (1/3) - Metadata Panel -->
+      <div class="lg:col-span-1">
+        <app-metadata-panel [project]="project()!"></app-metadata-panel>
+      </div>
+    </div>
+  </div>
+</div>

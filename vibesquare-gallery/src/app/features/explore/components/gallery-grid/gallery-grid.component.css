@@ -1,0 +1,87 @@
+/* Grid Layout */
+.grid-layout {
+  position: relative;
+}
+
+.grid-item {
+  position: relative;
+}
+
+/* Masonry Layout */
+.masonry-layout {
+  position: relative;
+}
+
+.masonry-item {
+  position: relative;
+  margin-bottom: 1.5rem;
+}
+
+/* Staggered animation for masonry items */
+.masonry-item:nth-child(1) { animation-delay: 0ms; }
+.masonry-item:nth-child(2) { animation-delay: 50ms; }
+.masonry-item:nth-child(3) { animation-delay: 100ms; }
+.masonry-item:nth-child(4) { animation-delay: 150ms; }
+.masonry-item:nth-child(5) { animation-delay: 200ms; }
+.masonry-item:nth-child(6) { animation-delay: 250ms; }
+.masonry-item:nth-child(7) { animation-delay: 300ms; }
+.masonry-item:nth-child(8) { animation-delay: 350ms; }
+
+/* Carousel Layout */
+.carousel-layout {
+  padding: 0 3rem;
+}
+
+.carousel-container {
+  position: relative;
+}
+
+.carousel-track {
+  will-change: transform;
+}
+
+.carousel-slide {
+  position: relative;
+}
+
+/* Navigation buttons */
+.carousel-nav {
+  z-index: 20;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+}
+
+.carousel-nav:not(:disabled):hover {
+  box-shadow: 0 4px 20px rgba(23, 255, 220, 0.2);
+}
+
+/* Dots */
+.dot {
+  cursor: pointer;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .carousel-layout {
+    padding: 0 2rem;
+  }
+
+  .carousel-nav {
+    width: 2.5rem;
+    height: 2.5rem;
+  }
+
+  .carousel-nav-prev {
+    transform: translateY(-50%) translateX(-0.5rem);
+  }
+
+  .carousel-nav-next {
+    transform: translateY(-50%) translateX(0.5rem);
+  }
+}
+
+/* Animation for items */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+

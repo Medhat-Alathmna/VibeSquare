@@ -1,0 +1,36 @@
+:host {
+  display: block;
+}
+
+.hero-container {
+  position: relative;
+  min-height: 60vh;
+  display: flex;
+  align-items: flex-end;
+  overflow: hidden;
+}
+
+.hero-background {
+  position: absolute;
+  inset: 0;
+  background-size: cover;
+  background-position: center;
+  filter: blur(20px);
+  transform: scale(1.1);
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(26, 26, 26, 0.95) 0%,
+    rgba(26, 26, 26, 0.8) 50%,
+    rgba(26, 26, 26, 0.6) 100%
+  );
+}
+
+.hero-content {
+  position: relative;
+  width: 100%;
+}

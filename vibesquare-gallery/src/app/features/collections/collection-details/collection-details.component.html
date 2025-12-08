@@ -1,0 +1,69 @@
+<!-- Loading State -->
+<div *ngIf="loading()" class="loading-container">
+  <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-secondary mx-auto"></div>
+  <p class="text-gray-400 mt-4 text-center">Loading collection...</p>
+</div>
+
+<!-- Not Found State -->
+<div *ngIf="notFound() && !loading()" class="not-found-container">
+  <svg class="w-24 h-24 mx-auto mb-4 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+  </svg>
+  <h2 class="text-2xl font-display font-bold text-white mb-2 text-center">Collection Not Found</h2>
+  <p class="text-gray-400 mb-6 text-center">The collection you're looking for doesn't exist.</p>
+  <div class="text-center">
+    <button
+      (click)="goBack()"
+      class="px-6 py-3 bg-secondary text-black font-medium rounded-lg hover:bg-secondary/90 transition-colors">
+      Back to Collections
+    </button>
+  </div>
+</div>
+
+<!-- Collection Content -->
+<div *ngIf="collection() && !loading()" class="collection-details-page">
+  <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <!-- Back Button -->
+    <button
+      (click)="goBack()"
+      class="flex items-center gap-2 text-gray-400 hover:text-white transition-colors mb-8">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+      </svg>
+      Back to Collections
+    </button>
+
+    <!-- Collection Header -->
+    <div class="mb-12">
+      <div class="flex items-center gap-3 mb-4">
+        <h1 class="text-4xl md:text-5xl font-display font-bold text-white">
+          {{ collection()!.title }}
+        </h1>
+        <span
+          *ngIf="collection()!.featured"
+          class="featured-badge">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+          </svg>
+          Featured
+        </span>
+      </div>
+
+      <p class="text-xl text-gray-400 max-w-3xl mb-4">
+        {{ collection()!.description }}
+      </p>
+
+      <div class="flex items-center gap-4 text-sm text-gray-500">
+        <span class="flex items-center gap-2">
+          <svg class="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+          </svg>
+          {{ collectionProjects().length }} Projects
+        </span>
+      </div>
+    </div>
+
+    <!-- Projects Grid -->
+    <app-masonry-grid [projects]="collectionProjects()"></app-masonry-grid>
+  </div>
+</div>

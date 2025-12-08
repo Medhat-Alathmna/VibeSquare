@@ -1,0 +1,144 @@
+:host {
+  display: block;
+}
+
+.about-page {
+  min-height: calc(100vh - 64px);
+  animation: fade-in 0.3s ease-in-out;
+}
+
+.hero-section {
+  padding: 4rem 0 6rem;
+  text-align: center;
+}
+
+.logo-container {
+  display: flex;
+  justify-content: center;
+  margin-bottom: 2rem;
+}
+
+.logo-icon {
+  width: 5rem;
+  height: 5rem;
+  border-radius: 1rem;
+  background: linear-gradient(135deg, rgba(23, 255, 220, 0.2) 0%, rgba(23, 255, 220, 0.05) 100%);
+  border: 2px solid rgba(23, 255, 220, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: pulse-glow 3s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+  0%, 100% {
+    box-shadow: 0 0 20px rgba(23, 255, 220, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 40px rgba(23, 255, 220, 0.5);
+  }
+}
+
+.features-section {
+  padding: 4rem 0;
+}
+
+.feature-card {
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 0.75rem;
+  padding: 2rem;
+  transition: all 0.3s ease;
+}
+
+.feature-card:hover {
+  border-color: rgba(23, 255, 220, 0.5);
+  transform: translateY(-4px);
+}
+
+.feature-icon {
+  width: 3.5rem;
+  height: 3.5rem;
+  background: rgba(23, 255, 220, 0.1);
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1.5rem;
+  color: #17ffdc;
+}
+
+.feature-title {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-bottom: 0.75rem;
+  font-family: 'Space Grotesk', sans-serif;
+}
+
+.feature-description {
+  color: #9ca3af;
+  line-height: 1.6;
+}
+
+.frameworks-section {
+  padding: 4rem 0;
+  background: linear-gradient(to bottom, transparent, rgba(23, 255, 220, 0.02), transparent);
+}
+
+.frameworks-grid {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 1rem;
+  max-width: 4xl;
+  margin: 0 auto;
+}
+
+.framework-chip {
+  padding: 0.75rem 1.5rem;
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 0.5rem;
+  color: #ffffff;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: default;
+}
+
+.framework-chip:hover {
+  border-color: #17ffdc;
+  background: rgba(23, 255, 220, 0.05);
+  color: #17ffdc;
+}
+
+.mission-section {
+  padding: 4rem 0;
+  max-width: 4xl;
+  margin: 0 auto;
+}
+
+.mission-content {
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 0.75rem;
+  padding: 3rem;
+}
+
+.cta-section {
+  padding: 4rem 0 6rem;
+  background: linear-gradient(to bottom, transparent, rgba(23, 255, 220, 0.03));
+  margin-top: 4rem;
+  border-radius: 1rem;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

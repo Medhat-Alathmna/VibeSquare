@@ -1,0 +1,20 @@
+:host {
+  display: block;
+}
+
+.prompt-section {
+  margin-bottom: 2rem;
+}
+
+.prompt-box {
+  background: #2a2a2a;
+  border: 1px solid #3a3a3a;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+}
+
+.prompt-text {
+  color: #e5e7eb;
+  line-height: 1.75;
+  font-size: 0.9375rem;
+}

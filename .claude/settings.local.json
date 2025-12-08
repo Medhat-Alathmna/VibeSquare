@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ng version:*)",
+      "Bash(npx @angular/cli@21 new . --routing --style=css --standalone --skip-git --package-manager=npm)",
+      "Bash(npx @angular/cli@21 new:*)",
+      "Bash(npm install)",
+      "Bash(npm install:*)",
+      "Bash(npx tailwindcss init)",
+      "Bash(tree:*)",
+      "Bash(npm run build:*)",
+      "Bash(cat:*)",
+      "Bash(npm uninstall:*)",
+      "Bash(npm run start:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

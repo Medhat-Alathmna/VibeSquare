@@ -1,0 +1,41 @@
+/* Layout Switcher Styles */
+.layout-switcher {
+  user-select: none;
+}
+
+/* Dropdown animation */
+.dropdown-menu {
+  animation: dropdownSlide 0.2s ease-out;
+}
+
+@keyframes dropdownSlide {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Button active state */
+button:active {
+  transform: scale(0.98);
+}
+
+/* Hover highlight effect */
+.dropdown-menu button::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: transparent;
+  transition: background-color 0.2s;
+}
+
+.dropdown-menu button:hover::before {
+  background: #17ffdc;
+}
