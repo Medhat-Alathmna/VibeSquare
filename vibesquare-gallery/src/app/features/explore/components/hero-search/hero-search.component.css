@@ -1,0 +1,126 @@
+:host {
+  display: block;
+}
+
+.hero-search-section {
+  position: relative;
+  min-height: 45vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4rem 1rem;
+  animation: fade-in 0.4s ease-out;
+}
+
+.hero-background {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(
+      ellipse 80% 50% at 50% -10%,
+      rgba(23, 255, 220, 0.08) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 80% 20%,
+      rgba(23, 255, 220, 0.04) 0%,
+      transparent 40%
+    ),
+    radial-gradient(
+      ellipse 60% 40% at 20% 20%,
+      rgba(23, 255, 220, 0.04) 0%,
+      transparent 40%
+    );
+  pointer-events: none;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 10;
+}
+
+.search-container {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+.search-container:focus-within {
+  box-shadow:
+    0 0 0 1px rgba(23, 255, 220, 0.3),
+    0 0 40px -10px rgba(23, 255, 220, 0.2),
+    0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* Custom shadow utility */
+.shadow-glow {
+  box-shadow:
+    0 0 0 1px rgba(23, 255, 220, 0.3),
+    0 0 40px -10px rgba(23, 255, 220, 0.2),
+    0 25px 50px -12px rgba(0, 0, 0, 0.5);
+}
+
+/* Analyze button hover effect */
+.analyze-btn:not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 20px rgba(23, 255, 220, 0.3);
+}
+
+.analyze-btn:not(:disabled):active {
+  transform: translateY(0);
+}
+
+/* Rotating word animation */
+.rotating-word {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  display: inline-block;
+  width: 220px;
+  text-align: left;
+}
+
+@media (min-width: 768px) {
+  .rotating-word {
+    width: 280px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .rotating-word {
+    width: 340px;
+  }
+}
+
+.rotating-word.animate-out {
+  opacity: 0;
+  transform: translateY(-20px);
+  filter: blur(4px);
+}
+
+/* Animations */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .hero-search-section {
+    min-height: 40vh;
+    padding: 2rem 1rem;
+  }
+
+  .search-container {
+    flex-wrap: wrap;
+  }
+
+  .search-container input {
+    width: 100%;
+    border-bottom: 1px solid rgba(58, 58, 58, 0.5);
+  }
+}

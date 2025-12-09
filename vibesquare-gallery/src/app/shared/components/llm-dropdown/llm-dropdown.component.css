@@ -1,0 +1,27 @@
+:host {
+  display: block;
+  height: 100%;
+  position: relative;
+  z-index: 100;
+}
+
+.llm-dropdown {
+  height: 100%;
+  position: relative;
+}
+
+.dropdown-menu {
+  animation: slide-up 0.2s ease-out;
+  z-index: 9999 !important;
+}
+
+@keyframes slide-up {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}

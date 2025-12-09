@@ -1,0 +1,84 @@
+<!-- Icon Templates -->
+<ng-template #openaiIcon let-color="color">
+  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" [style.color]="color">
+    <path d="M22.28 9.82a5.99 5.99 0 0 0-.52-4.91 6.05 6.05 0 0 0-6.51-2.9A6.07 6.07 0 0 0 4.98 4.18a5.99 5.99 0 0 0-4 2.9 6.05 6.05 0 0 0 .74 7.1 5.98 5.98 0 0 0 .51 4.91 6.05 6.05 0 0 0 6.52 2.9A5.99 5.99 0 0 0 13.26 24a6.06 6.06 0 0 0 5.77-4.21 5.99 5.99 0 0 0 4-2.9 6.06 6.06 0 0 0-.75-7.07zM13.26 22.43a4.48 4.48 0 0 1-2.88-1.04l.14-.08 4.78-2.76a.8.8 0 0 0 .39-.68v-6.74l2.02 1.17a.07.07 0 0 1 .04.05v5.58a4.5 4.5 0 0 1-4.49 4.5zM3.6 18.3a4.47 4.47 0 0 1-.54-3.01l.14.08 4.78 2.76a.77.77 0 0 0 .78 0l5.84-3.37v2.33a.08.08 0 0 1-.03.06l-4.84 2.8a4.5 4.5 0 0 1-6.14-1.65zM2.34 7.9a4.49 4.49 0 0 1 2.37-1.97v5.67a.77.77 0 0 0 .39.68l5.81 3.35-2.02 1.17a.08.08 0 0 1-.07 0l-4.83-2.79A4.5 4.5 0 0 1 2.34 7.9zm16.6 3.86l-5.83-3.39 2.01-1.16a.08.08 0 0 1 .07 0l4.83 2.79a4.49 4.49 0 0 1-.68 8.1v-5.68a.79.79 0 0 0-.4-.66zm2.01-3.02l-.14-.09-4.77-2.78a.78.78 0 0 0-.79 0L9.41 9.23V6.9a.07.07 0 0 1 .03-.06l4.83-2.79a4.5 4.5 0 0 1 6.68 4.66zm-12.64 4.14l-2.02-1.17a.08.08 0 0 1-.04-.05V6.07a4.5 4.5 0 0 1 7.38-3.45l-.14.08-4.78 2.76a.8.8 0 0 0-.4.68zm1.1-2.37l2.6-1.5 2.6 1.5v3l-2.6 1.5-2.6-1.5z"/>
+  </svg>
+</ng-template>
+
+<ng-template #anthropicIcon let-color="color">
+  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" [style.color]="color">
+    <path d="M17.3 3.54l-5.16 16.92h-3.26l5.16-16.92h3.26zm-7.34 0L4.8 20.46H1.54L6.7 3.54h3.26zm7.34 0h3.26l-2.58 8.46-2.58-8.46z"/>
+  </svg>
+</ng-template>
+
+<ng-template #googleIcon let-color="color">
+  <svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" [style.color]="color">
+    <path d="M12.48 10.92v3.28h7.84c-.24 1.84-.85 3.19-1.79 4.13-1.15 1.15-2.93 2.4-6.05 2.4-4.83 0-8.6-3.89-8.6-8.72s3.77-8.72 8.6-8.72c2.6 0 4.5 1.03 5.9 2.35l2.31-2.31C18.75 1.44 16.13 0 12.48 0 5.87 0 .31 5.39.31 12s5.56 12 12.17 12c3.57 0 6.27-1.17 8.37-3.36 2.16-2.16 2.84-5.21 2.84-7.67 0-.76-.05-1.47-.17-2.05H12.48z"/>
+  </svg>
+</ng-template>
+
+<ng-template #checkIcon>
+  <svg class="w-4 h-4 text-secondary ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+  </svg>
+</ng-template>
+
+<ng-template #chevronIcon>
+  <svg class="w-4 h-4 text-gray-400 transition-transform duration-200"
+       [class.rotate-180]="isOpen()"
+       fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+  </svg>
+</ng-template>
+
+<!-- LLM Icon Template -->
+<ng-template #llmIcon let-icon="icon" let-color="color" let-size="size">
+  <span class="llm-icon flex items-center justify-center rounded-md"
+        [class]="size === 'lg' ? 'w-7 h-7' : 'w-6 h-6'"
+        [style.background]="color + '20'">
+    @switch (icon) {
+      @case ('openai') { <ng-container *ngTemplateOutlet="openaiIcon; context: { color }"></ng-container> }
+      @case ('anthropic') { <ng-container *ngTemplateOutlet="anthropicIcon; context: { color }"></ng-container> }
+      @case ('google') { <ng-container *ngTemplateOutlet="googleIcon; context: { color }"></ng-container> }
+    }
+  </span>
+</ng-template>
+
+<!-- Main Component -->
+<div class="llm-dropdown relative h-full">
+  <!-- Dropdown Trigger -->
+  <button (click)="toggleDropdown()"
+          class="flex items-center gap-2 px-5 py-4 h-full bg-dark-surface/50
+                 hover:bg-dark-surface transition-all duration-200 min-w-[140px]">
+    <ng-container *ngTemplateOutlet="llmIcon; context: { icon: currentLlm.icon, color: currentLlm.color, size: 'sm' }"></ng-container>
+    <span class="text-sm font-medium text-white flex-1 text-left">{{ currentLlm.label }}</span>
+    <ng-container *ngTemplateOutlet="chevronIcon"></ng-container>
+  </button>
+
+  <!-- Dropdown Menu -->
+  @if (isOpen()) {
+    <div class="dropdown-menu absolute top-full right-0 mt-2 min-w-[180px]
+                bg-dark-surface border border-dark-border rounded-xl
+                shadow-xl shadow-black/30 overflow-hidden">
+      @for (llm of llmOptions; track llm.value) {
+        <button (click)="selectLlm(llm.value)"
+                class="flex items-center gap-3 w-full px-4 py-3 text-left
+                       hover:bg-dark-border/30 transition-colors duration-150"
+                [class.bg-secondary/10]="llm.value === selectedValue()">
+          <ng-container *ngTemplateOutlet="llmIcon; context: { icon: llm.icon, color: llm.color, size: 'lg' }"></ng-container>
+          <div class="flex flex-col">
+            <span class="text-sm font-medium"
+                  [class.text-secondary]="llm.value === selectedValue()"
+                  [class.text-white]="llm.value !== selectedValue()">
+              {{ llm.label }}
+            </span>
+            <span class="text-xs text-gray-500">{{ llm.provider }}</span>
+          </div>
+          @if (llm.value === selectedValue()) {
+            <ng-container *ngTemplateOutlet="checkIcon"></ng-container>
+          }
+        </button>
+      }
+    </div>
+  }
+</div>

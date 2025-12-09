@@ -1,0 +1,127 @@
+<section class="hero-search-section">
+  <!-- Background Gradient -->
+  <div class="hero-background"></div>
+
+  <!-- Content Container (80% width) -->
+  <div class="hero-content w-[80%] max-w-5xl mx-auto text-center">
+    <!-- Headline -->
+    <h1 class="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-white mb-4 tracking-tight
+               flex flex-wrap items-center justify-center gap-x-4">
+      <span>Website to</span>
+      <span class="rotating-word"
+            [class.animate-out]="isAnimating()"
+            [style.color]="currentWord().color">
+        {{ currentWord().text }}
+      </span>
+    </h1>
+
+    <!-- Subtitle -->
+    @if (showSubtitle()) {
+      <p class="text-lg md:text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
+        Transform any website into a professional, detailed prompt for AI code generation
+      </p>
+    }
+
+    <!-- Search Input Group -->
+    <div class="search-container flex items-stretch
+                bg-dark-surface border border-dark-border
+                rounded-2xl overflow-hidden
+                focus-within:border-secondary/50 focus-within:shadow-glow
+                transition-all duration-300">
+
+      <!-- Search Icon -->
+      <div class="flex items-center pl-6 text-gray-500">
+        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+        </svg>
+      </div>
+
+      <!-- URL Input -->
+      <input
+        type="url"
+        [placeholder]="placeholder()"
+        [value]="urlInput()"
+        (input)="onUrlInput($event)"
+        (keydown)="onKeydown($event)"
+        class="flex-1 px-4 py-5 bg-transparent text-white text-lg
+               placeholder-gray-500 focus:outline-none font-medium"
+      />
+
+      <!-- Divider -->
+      <div class="w-px bg-dark-border my-3"></div>
+
+      <!-- LLM Dropdown -->
+      <app-llm-dropdown
+        [selectedValue]="selectedLlm()"
+        (selectionChange)="onLlmChange($event)">
+      </app-llm-dropdown>
+
+      <!-- Analyze Button -->
+      <button
+        (click)="onAnalyze()"
+        [disabled]="!isValidUrl() || isLoading()"
+        class="analyze-btn flex items-center gap-2 px-6 py-4 m-2
+               bg-secondary text-primary font-semibold rounded-xl
+               hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed
+               transition-all duration-200">
+        @if (isLoading()) {
+          <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+        } @else {
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                  d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+        }
+        <span class="hidden sm:inline">Generate</span>
+      </button>
+    </div>
+
+    <!-- Helper Text -->
+    <div class="mt-8 flex items-center justify-center gap-6 text-sm text-gray-500">
+      <span class="flex items-center gap-2">
+        <span class="w-2 h-2 bg-secondary rounded-full animate-pulse"></span>
+        AI-Powered Prompts
+      </span>
+      <span class="hidden sm:inline">|</span>
+      <span class="hidden sm:flex items-center gap-2">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+        </svg>
+        Ready-to-use Output
+      </span>
+      <span class="hidden sm:inline">|</span>
+      <span class="hidden sm:inline">Copy & Paste</span>
+    </div>
+
+    <!-- Suggested URLs -->
+    <div class="mt-6 flex flex-wrap items-center justify-center gap-2">
+      <span class="text-xs text-gray-600 mr-2">Try:</span>
+      <button
+        (click)="urlInput.set('https://stripe.com')"
+        class="px-3 py-1.5 text-xs font-medium text-gray-400
+               bg-dark-surface/50 border border-dark-border/50 rounded-full
+               hover:border-secondary/30 hover:text-secondary transition-all duration-200">
+        stripe.com
+      </button>
+      <button
+        (click)="urlInput.set('https://linear.app')"
+        class="px-3 py-1.5 text-xs font-medium text-gray-400
+               bg-dark-surface/50 border border-dark-border/50 rounded-full
+               hover:border-secondary/30 hover:text-secondary transition-all duration-200">
+        linear.app
+      </button>
+      <button
+        (click)="urlInput.set('https://vercel.com')"
+        class="px-3 py-1.5 text-xs font-medium text-gray-400
+               bg-dark-surface/50 border border-dark-border/50 rounded-full
+               hover:border-secondary/30 hover:text-secondary transition-all duration-200">
+        vercel.com
+      </button>
+    </div>
+  </div>
+</section>
