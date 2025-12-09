@@ -25,6 +25,58 @@
     <!-- Scrollable sections -->
     <div class="flex-1 overflow-y-auto scrollbar-thin p-4">
 
+      <!-- SORTS SECTION -->
+      <div class="sidebar-section mb-4">
+        <!-- Section Header -->
+        <button
+          (click)="toggleSection('sorts')"
+          class="w-full flex items-center justify-between p-3 rounded-lg hover:bg-dark-bg transition-colors group">
+          <div class="flex items-center gap-3">
+            <svg class="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/>
+            </svg>
+            <span class="font-display font-semibold text-white">Sorts</span>
+          </div>
+          <svg
+            class="w-4 h-4 text-gray-400 transition-transform duration-200"
+            [class.rotate-180]="isSectionExpanded('sorts')"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+
+        <!-- Section Content -->
+        <div
+          *ngIf="isSectionExpanded('sorts')"
+          class="section-content pl-4 pr-2 pb-2 mt-2">
+          <div class="space-y-1">
+            <button
+              *ngFor="let option of sortOptions"
+              (click)="setSortOption(option.value)"
+              [class.bg-secondary]="currentSort().sortBy === option.value"
+              [class.text-black]="currentSort().sortBy === option.value"
+              [class.text-gray-300]="currentSort().sortBy !== option.value"
+              class="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-dark-bg transition-colors text-left">
+              <svg
+                *ngIf="currentSort().sortBy === option.value"
+                class="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+              <span
+                *ngIf="currentSort().sortBy !== option.value"
+                class="w-4 h-4">
+              </span>
+              <span class="text-sm font-medium">{{ option.label }}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
       <!-- FILTERS SECTION -->
       <div class="sidebar-section mb-4">
         <!-- Section Header -->
@@ -194,6 +246,16 @@
   <div
     *ngIf="isCollapsed()"
     class="flex-1 flex flex-col items-center py-4 gap-2">
+
+    <!-- Sorts Icon -->
+    <button
+      (click)="toggleSidebar()"
+      class="w-10 h-10 rounded-lg hover:bg-dark-bg flex items-center justify-center text-gray-400 hover:text-secondary transition-colors"
+      title="Sorts">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4h13M3 8h9m-9 4h6m4 0l4-4m0 0l4 4m-4-4v12"/>
+      </svg>
+    </button>
 
     <!-- Filters Icon -->
     <button

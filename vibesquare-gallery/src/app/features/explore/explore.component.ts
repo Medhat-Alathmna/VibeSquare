@@ -1,14 +1,13 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ProjectService } from '../../core/services/project.service';
-import { FilterBarComponent } from './components/filter-bar/filter-bar.component';
 import { GalleryGridComponent } from './components/gallery-grid/gallery-grid.component';
 import { LayoutSwitcherComponent, LayoutType } from './components/layout-switcher/layout-switcher.component';
 
 @Component({
   selector: 'app-explore',
   standalone: true,
-  imports: [CommonModule, FilterBarComponent, GalleryGridComponent, LayoutSwitcherComponent],
+  imports: [CommonModule, GalleryGridComponent, LayoutSwitcherComponent],
   templateUrl: './explore.component.html',
   styleUrls: ['./explore.component.css']
 })

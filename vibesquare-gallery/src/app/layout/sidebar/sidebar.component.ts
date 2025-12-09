@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { ProjectService } from '../../core/services/project.service';
 import { Framework, Category } from '../../core/models/project.model';
+import { SortOption } from '../../core/models/filter.model';
 
 interface SidebarSection {
   id: string;
@@ -33,9 +34,21 @@ export class SidebarComponent {
 
   // Collapsible sections state
   sections = signal<SidebarSection[]>([
+    { id: 'sorts', title: 'Sorts', icon: 'sort', isExpanded: true },
     { id: 'filters', title: 'Filters', icon: 'filter', isExpanded: false },
     { id: 'community', title: 'Community', icon: 'community', isExpanded: false }
   ]);
+
+  // Sort options
+  sortOptions: { value: SortOption; label: string }[] = [
+    { value: 'recent', label: 'Recent' },
+    { value: 'popular', label: 'Popular' },
+    { value: 'mostLiked', label: 'Most Liked' },
+    { value: 'mostDownloaded', label: 'Most Downloaded' }
+  ];
+
+  // Current sort from service
+  currentSort = this.projectService.filterState;
 
   // Filter options
   frameworks: Framework[] = ['Angular', 'React', 'Vue', 'Svelte', 'Next.js', 'Nuxt.js', 'Vanilla'];
@@ -100,6 +113,10 @@ export class SidebarComponent {
     this.selectedFrameworks.set([]);
     this.selectedCategories.set([]);
     this.projectService.resetFilters();
+  }
+
+  setSortOption(sortBy: SortOption) {
+    this.projectService.updateFilters({ sortBy });
   }
 
   toggleSidebar() {
