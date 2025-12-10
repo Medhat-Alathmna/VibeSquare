@@ -1,4 +1,4 @@
-import { Component, signal, computed, inject } from '@angular/core';
+import { Component, signal, inject, HostListener, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink, RouterLinkActive } from '@angular/router';
 import { ProjectService } from '../../core/services/project.service';
@@ -29,8 +29,17 @@ interface BottomAction {
 })
 export class SidebarComponent {
   private projectService = inject(ProjectService);
+  private elementRef = inject(ElementRef);
 
   isCollapsed = signal(true);
+
+  @HostListener('document:click', ['$event'])
+  onDocumentClick(event: MouseEvent) {
+    // Only close if sidebar is expanded and click is outside
+    if (!this.isCollapsed() && !this.elementRef.nativeElement.contains(event.target)) {
+      this.isCollapsed.set(true);
+    }
+  }
 
   // Collapsible sections state
   sections = signal<SidebarSection[]>([
