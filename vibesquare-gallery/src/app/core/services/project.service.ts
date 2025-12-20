@@ -1,11 +1,21 @@
-import { Injectable, signal, computed } from '@angular/core';
+import { Injectable, signal, computed, inject } from '@angular/core';
 import { Project, Framework, Category } from '../models/project.model';
 import { FilterState, SortOption } from '../models/filter.model';
+import { HttpClient } from '@angular/common/http';
+import { API_CONFIG } from '../constants/api.constants';
+import { Observable, tap, catchError, of } from 'rxjs';
+import { AuthService } from '../auth/services/auth.service';
+
 const PROJECTS_DATA_URL = '../../assets/data/projects.json';
+
 @Injectable({
   providedIn: 'root'
 })
 export class ProjectService {
+  private http = inject(HttpClient);
+  private authService = inject(AuthService); // Need to import AuthService
+  private apiUrl = `${API_CONFIG.baseUrl}/favorites`;
+
   // Signal-based state
   private allProjectsSignal = signal<Project[]>([]);
   private filterStateSignal = signal<FilterState>({
@@ -63,9 +73,9 @@ export class ProjectService {
   public activeFiltersCount = computed(() => {
     const filters = this.filterStateSignal();
     return filters.frameworks.length +
-           filters.categories.length +
-           filters.tags.length +
-           (filters.searchQuery ? 1 : 0);
+      filters.categories.length +
+      filters.tags.length +
+      (filters.searchQuery ? 1 : 0);
   });
 
   constructor() {
@@ -138,13 +148,65 @@ export class ProjectService {
 
   private async loadProjectsInternal() {
     try {
-      console.log(PROJECTS_DATA_URL);
-      
       const response = await fetch(PROJECTS_DATA_URL);
       const projects = await response.json();
       this.allProjectsSignal.set(projects);
+
+      if (this.authService.isAuthenticated()) {
+        const ids = projects.map((p: Project) => p.id);
+        this.checkMultipleFavorites(ids).subscribe();
+      }
     } catch (error) {
       console.error('Failed to load projects:', error);
     }
+  }
+
+  // --- Favorites Logic ---
+
+  addToFavorites(projectId: string): Observable<any> {
+    return this.http.post(`${this.apiUrl}/${projectId}`, {}).pipe(
+      tap(() => this.updateProjectFavoriteStatus(projectId, true))
+    );
+  }
+
+  removeFromFavorites(projectId: string): Observable<any> {
+    return this.http.delete(`${this.apiUrl}/${projectId}`).pipe(
+      tap(() => this.updateProjectFavoriteStatus(projectId, false))
+    );
+  }
+
+  checkFavoriteStatus(projectId: string): Observable<any> {
+    return this.http.get(`${this.apiUrl}/check/${projectId}`).pipe(
+      tap((res: any) => {
+        if (res.success) {
+          this.updateProjectFavoriteStatus(projectId, res.data.isFavorited);
+        }
+      })
+    );
+  }
+
+  // Batch check for list views
+  checkMultipleFavorites(projectIds: string[]): Observable<any> {
+    return this.http.post(`${this.apiUrl}/check-multiple`, { projectIds }).pipe(
+      tap((res: any) => {
+        if (res.success && res.data) {
+          const updates = res.data;
+          this.allProjectsSignal.update(projects =>
+            projects.map(p => ({
+              ...p,
+              isFavorited: updates[p.id] || false
+            }))
+          );
+        }
+      })
+    );
+  }
+
+  private updateProjectFavoriteStatus(projectId: string, isFavorited: boolean) {
+    this.allProjectsSignal.update(projects =>
+      projects.map(p =>
+        p.id === projectId ? { ...p, isFavorited } : p
+      )
+    );
   }
 }

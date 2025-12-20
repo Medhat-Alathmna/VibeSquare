@@ -31,6 +31,9 @@ export interface Project {
 
   // Code files
   codeFiles?: CodeFile[];
+
+  // User specific
+  isFavorited?: boolean;
 }
 
 export interface Prompt {
