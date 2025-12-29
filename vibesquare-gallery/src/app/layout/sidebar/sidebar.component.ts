@@ -1,7 +1,9 @@
-import { Component, signal, inject, HostListener, ElementRef } from '@angular/core';
+import { Component, signal, inject, HostListener, ElementRef, computed, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { ProjectService } from '../../core/services/project.service';
+import { QuotaService } from '../../core/services/quota.service';
+import { AuthService } from '../../core/auth/services/auth.service';
 import { Framework, Category } from '../../core/models/project.model';
 import { SortOption } from '../../core/models/filter.model';
 
@@ -27,11 +29,46 @@ interface BottomAction {
   templateUrl: './sidebar.component.html',
   styleUrls: ['./sidebar.component.css']
 })
-export class SidebarComponent {
+export class SidebarComponent implements OnInit {
   private projectService = inject(ProjectService);
+  private quotaService = inject(QuotaService);
+  private authService = inject(AuthService);
   private elementRef = inject(ElementRef);
+  private router = inject(Router);
 
   isCollapsed = signal(true);
+
+  // Hover expand functionality
+  private hoverTimeout: ReturnType<typeof setTimeout> | null = null;
+  private isHoverExpanded = false;
+
+  // Auth signals
+  isAuthenticated = this.authService.isAuthenticated;
+  currentUser = this.authService.currentUser;
+
+  // Quota signals
+  quota = this.quotaService.quota;
+  tokensRemaining = this.quotaService.tokensRemaining;
+  tokensLimit = this.quotaService.tokensLimit;
+  usagePercentage = this.quotaService.usagePercentage;
+  resetTimeString = this.quotaService.resetTimeString;
+  isPremium = this.quotaService.isPremium;
+  isQuotaLoading = this.quotaService.isLoading;
+
+  // Progress bar color based on usage
+  progressColor = computed(() => {
+    const percentage = this.usagePercentage();
+    if (percentage >= 90) return 'bg-red-500';
+    if (percentage >= 70) return 'bg-yellow-500';
+    return 'bg-secondary';
+  });
+
+  ngOnInit(): void {
+    // Load quota if authenticated
+    if (this.isAuthenticated()) {
+      this.quotaService.getQuota().subscribe();
+    }
+  }
 
   @HostListener('document:click', ['$event'])
   onDocumentClick(event: MouseEvent) {
@@ -130,5 +167,48 @@ export class SidebarComponent {
 
   toggleSidebar() {
     this.isCollapsed.update(v => !v);
+    this.isHoverExpanded = false;
+  }
+
+  onSidebarMouseEnter(): void {
+    // Only trigger hover expand if sidebar is collapsed
+    if (this.isCollapsed()) {
+      this.hoverTimeout = setTimeout(() => {
+        this.isCollapsed.set(false);
+        this.isHoverExpanded = true;
+      }, 500); // 1 second delay
+    }
+  }
+
+  onSidebarMouseLeave(): void {
+    // Clear the timeout if mouse leaves before 1 second
+    if (this.hoverTimeout) {
+      clearTimeout(this.hoverTimeout);
+      this.hoverTimeout = null;
+    }
+
+    // Collapse only if it was expanded by hover
+    if (this.isHoverExpanded) {
+      this.isCollapsed.set(true);
+      this.isHoverExpanded = false;
+    }
+  }
+
+  formatNumber(num: number): string {
+    if (num >= 1000000) {
+      return (num / 1000000).toFixed(1) + 'M';
+    }
+    if (num >= 1000) {
+      return (num / 1000).toFixed(0) + 'K';
+    }
+    return num.toString();
+  }
+
+  onAccountClick(): void {
+    if (!this.isAuthenticated()) {
+      this.router.navigate(['/auth/login']);
+    } else {
+      this.router.navigate(['/profile']);
+    }
   }
 }

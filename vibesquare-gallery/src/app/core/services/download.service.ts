@@ -1,21 +1,19 @@
 import { Injectable, inject } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { API_CONFIG } from '../constants/api.constants';
 import { Observable } from 'rxjs';
+import { ApiService } from '../api.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class DownloadService {
-  private http = inject(HttpClient);
-  private apiUrl = `${API_CONFIG.baseUrl}/downloads`;
+  private apiService = inject(ApiService);
 
   checkEligibility(projectId: string): Observable<any> {
-    return this.http.get(`${this.apiUrl}/check/${projectId}`);
+    return this.apiService.get(`gallery/downloads/check/${projectId}`);
   }
 
   recordDownload(projectId: string): Observable<any> {
-    return this.http.post(`${this.apiUrl}/${projectId}`, {});
+    return this.apiService.post(`gallery/downloads/${projectId}`, {});
   }
 
   downloadProject(downloadUrl: string, filename: string) {

@@ -54,6 +54,20 @@ body {
   justify-content: center;
 }
 
+/* CDK Overlay - Generic Modal */
+.modal-backdrop {
+  background-color: rgba(0, 0, 0, 0.6);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+}
+
+.modal-panel {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
 /* Ensure CDK overlay is always on top */
 .cdk-overlay-container {
   z-index: 99999;

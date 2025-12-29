@@ -1,0 +1,30 @@
+:host {
+    display: block;
+}
+
+.subscription-card {
+    background-color: #2a2a2a;
+    border: 1px solid #3a3a3a;
+    border-radius: 1rem;
+    padding: 1.5rem;
+}
+
+.subscription-card.compact {
+    padding: 1rem;
+}
+
+.subscription-card.compact .current-plan h3 {
+    font-size: 1rem;
+}
+
+.current-plan {
+    /* No additional styles needed */
+}
+
+.quota-section {
+    /* Handled by Tailwind classes */
+}
+
+.upgrade-promo {
+    /* Handled by Tailwind classes */
+}

@@ -4,13 +4,25 @@ import { AuthService } from '../services/auth.service';
 import { catchError, switchMap, throwError } from 'rxjs';
 import { Router } from '@angular/router';
 
+// Auth endpoints that should NOT trigger token refresh on 401
+const AUTH_ENDPOINTS = [
+    '/auth/login',
+    '/auth/register',
+    '/auth/refresh',
+    '/auth/forgot-password',
+    '/auth/reset-password',
+    '/auth/verify-email'
+];
+
+const isAuthEndpoint = (url: string): boolean => {
+    return AUTH_ENDPOINTS.some(endpoint => url.includes(endpoint));
+};
+
 export const authInterceptor: HttpInterceptorFn = (req, next) => {
     const authService = inject(AuthService);
     const router = inject(Router);
 
-    // Skip adding token for auth endpoints to avoid loops if needed, 
-    // though usually harmless unless it's a refresh endpoint failing with bad token.
-    // We should definitely skip if it's the refresh endpoint itself to prevent infinite loops.
+    // Skip adding token for refresh endpoint to prevent infinite loops
     if (req.url.includes('/auth/refresh')) {
         return next(req);
     }
@@ -26,7 +38,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
 
     return next(req).pipe(
         catchError((error: HttpErrorResponse) => {
-            if (error.status === 401) {
+            // Only attempt token refresh for 401 errors on NON-auth endpoints
+            if (error.status === 401 && !isAuthEndpoint(req.url)) {
                 // Try to refresh token
                 return authService.refreshToken().pipe(
                     switchMap((response) => {
@@ -40,19 +53,20 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
                             });
                             return next(newReq);
                         }
-                        // Refresh failed (logic usually handled in service tap/catch, but just in case)
-                        authService.logout().subscribe(); // Perform cleanup
-                        router.navigate(['/login']);
+                        // Refresh failed
+                        authService.logout().subscribe();
+                        router.navigate(['/auth/login']);
                         return throwError(() => error);
                     }),
                     catchError((refreshErr) => {
                         // Refresh token failed completely
                         authService.logout().subscribe();
-                        router.navigate(['/login']);
+                        router.navigate(['/auth/login']);
                         return throwError(() => refreshErr);
                     })
                 );
             }
+            // For auth endpoints or non-401 errors, just pass through the error
             return throwError(() => error);
         })
     );

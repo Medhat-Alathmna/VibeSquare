@@ -1,0 +1,138 @@
+<div class="subscription-page">
+    <div class="container mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Header -->
+        <div class="text-center mb-12">
+            <h1 class="text-4xl font-display font-bold text-white mb-4">
+                Choose Your Plan
+            </h1>
+            <p class="text-lg text-gray-400 max-w-2xl mx-auto">
+                Get more tokens and unlock premium features to supercharge your website analysis.
+            </p>
+        </div>
+
+        <!-- Current Subscription (if Pro) -->
+        @if (isPremium()) {
+            <div class="max-w-lg mx-auto mb-12">
+                <app-subscription-card></app-subscription-card>
+            </div>
+        }
+
+        <!-- Billing Toggle -->
+        <div class="flex items-center justify-center gap-4 mb-10">
+            <span class="text-sm" [class.text-white]="selectedInterval() === 'month'" [class.text-gray-500]="selectedInterval() !== 'month'">
+                Monthly
+            </span>
+            <button
+                (click)="onToggleInterval()"
+                class="relative w-14 h-7 rounded-full transition-colors"
+                [class.bg-secondary]="selectedInterval() === 'year'"
+                [class.bg-dark-border]="selectedInterval() !== 'year'">
+                <span
+                    class="absolute top-1 w-5 h-5 bg-white rounded-full transition-transform"
+                    [class.left-1]="selectedInterval() === 'month'"
+                    [class.left-8]="selectedInterval() === 'year'">
+                </span>
+            </button>
+            <span class="text-sm" [class.text-white]="selectedInterval() === 'year'" [class.text-gray-500]="selectedInterval() !== 'year'">
+                Yearly
+                <span class="ml-1 px-2 py-0.5 text-xs font-medium bg-green-500/20 text-green-400 rounded-full">
+                    Save 17%
+                </span>
+            </span>
+        </div>
+
+        <!-- Pricing Cards -->
+        <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            @for (tier of tiers; track tier.name) {
+                <div
+                    class="pricing-card"
+                    [class.recommended]="tier.recommended"
+                    [class.current]="isPremium() ? tier.name === 'Pro' : tier.name === 'Free'">
+
+                    <!-- Recommended Badge -->
+                    @if (tier.recommended) {
+                        <div class="absolute -top-3 left-1/2 -translate-x-1/2">
+                            <span class="px-4 py-1 text-xs font-bold bg-secondary text-black rounded-full">
+                                RECOMMENDED
+                            </span>
+                        </div>
+                    }
+
+                    <!-- Plan Header -->
+                    <div class="mb-6">
+                        <h3 class="text-xl font-display font-bold text-white mb-2">
+                            {{ tier.name }}
+                        </h3>
+                        <div class="flex items-baseline gap-1">
+                            @if (tier.price === 0) {
+                                <span class="text-4xl font-bold text-white">Free</span>
+                            } @else {
+                                <span class="text-4xl font-bold text-white">${{ getPrice(tier) }}</span>
+                                <span class="text-gray-400">/{{ selectedInterval() }}</span>
+                            }
+                        </div>
+                        <p class="text-sm text-gray-400 mt-2">
+                            {{ formatNumber(tier.tokens) }} tokens per week
+                        </p>
+                    </div>
+
+                    <!-- Features -->
+                    <ul class="space-y-3 mb-8">
+                        @for (feature of tier.features; track feature) {
+                            <li class="flex items-start gap-3">
+                                <svg class="w-5 h-5 text-secondary flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                </svg>
+                                <span class="text-gray-300">{{ feature }}</span>
+                            </li>
+                        }
+                    </ul>
+
+                    <!-- CTA Button -->
+                    @if (tier.price === 0) {
+                        @if (!isPremium()) {
+                            <button disabled class="w-full py-3 px-4 text-sm font-medium text-gray-500 bg-dark-border rounded-lg cursor-not-allowed">
+                                Current Plan
+                            </button>
+                        } @else {
+                            <button disabled class="w-full py-3 px-4 text-sm font-medium text-gray-500 bg-dark-border rounded-lg cursor-not-allowed">
+                                Downgrade on Cancel
+                            </button>
+                        }
+                    } @else {
+                        @if (isPremium()) {
+                            <button disabled class="w-full py-3 px-4 text-sm font-medium text-secondary bg-secondary/20 border border-secondary/30 rounded-lg cursor-not-allowed">
+                                Current Plan
+                            </button>
+                        } @else {
+                            <app-button
+                                variant="primary"
+                                [fullWidth]="true"
+                                [disabled]="isLoading()"
+                                (click)="onSelectPlan(tier)">
+                                @if (isLoading()) {
+                                    <span class="flex items-center justify-center gap-2">
+                                        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                        </svg>
+                                        Processing...
+                                    </span>
+                                } @else {
+                                    Get Started
+                                }
+                            </app-button>
+                        }
+                    }
+                </div>
+            }
+        </div>
+
+        <!-- FAQ or Additional Info -->
+        <div class="mt-16 text-center">
+            <p class="text-gray-400">
+                Questions? <a href="/help" class="text-secondary hover:underline">Contact support</a>
+            </p>
+        </div>
+    </div>
+</div>

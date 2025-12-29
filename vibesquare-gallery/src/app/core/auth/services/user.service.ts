@@ -1,26 +1,24 @@
 import { Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { API_CONFIG } from '../../constants/api.constants';
 import { SafeGalleryUser } from '../models/auth.models';
+import { ApiService } from '../../api.service';
 
 @Injectable({
     providedIn: 'root'
 })
 export class UserService {
-    private apiUrl = `${API_CONFIG.baseUrl}/users`;
 
-    constructor(private http: HttpClient) { }
+    constructor(private apiService: ApiService) { }
 
     updateProfile(data: Partial<SafeGalleryUser>): Observable<any> {
-        return this.http.patch(`${this.apiUrl}/me`, data);
+        return this.apiService.patch('gallery/users/me', data);
     }
 
     getPublicProfile(username: string): Observable<any> {
-        return this.http.get(`${this.apiUrl}/${username}`);
+        return this.apiService.get(`gallery/users/${username}`);
     }
 
     deleteAccount(): Observable<any> {
-        return this.http.delete(`${this.apiUrl}/me`);
+        return this.apiService.delete('gallery/users/me');
     }
 }

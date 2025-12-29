@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../../core/auth/services/auth.service';
-import { catchError, throwError } from 'rxjs';
 import { SocialLoginButtonsComponent } from '../components/social-login-buttons/social-login-buttons.component';
 
 @Component({
@@ -35,17 +34,19 @@ export class LoginComponent {
 
         const { email, password } = this.loginForm.value;
 
-        this.authService.login({ email: email!, password: password! }).pipe(
-            catchError(err => {
+        this.authService.login({ email: email!, password: password! }).subscribe({
+            next: (response) => {
+                this.isLoading = false;
+                if (response.success) {
+                    const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/explore';
+                    this.router.navigateByUrl(returnUrl);
+                } else {
+                    this.errorMessage = response.message || 'Login failed. Please try again.';
+                }
+            },
+            error: (err) => {
                 this.isLoading = false;
                 this.errorMessage = err.error?.message || 'Login failed. Please try again.';
-                return throwError(() => err);
-            })
-        ).subscribe(response => {
-            this.isLoading = false;
-            if (response.success) {
-                const returnUrl = this.route.snapshot.queryParams['returnUrl'] || '/explore';
-                this.router.navigateByUrl(returnUrl);
             }
         });
     }

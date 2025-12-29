@@ -1,4 +1,4 @@
-import { Component, Input } from '@angular/core';
+import { Component, Input, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { Project } from '../../../../core/models/project.model';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
@@ -7,6 +7,7 @@ import { DownloadService } from '../../../../core/services/download.service';
 import { AuthService } from '../../../../core/auth/services/auth.service';
 import { ProjectService } from '../../../../core/services/project.service';
 import { Router } from '@angular/router';
+import { ToastService } from '../../../../core/services/toast.service';
 
 @Component({
   selector: 'app-project-hero',
@@ -18,12 +19,16 @@ import { Router } from '@angular/router';
 export class ProjectHeroComponent {
   @Input() project!: Project;
 
+  isLiking = signal(false);
+  hasLiked = signal(false);
+
   constructor(
     private clipboardService: ClipboardService,
     private downloadService: DownloadService,
     private authService: AuthService,
     private projectService: ProjectService,
-    private router: Router
+    private router: Router,
+    private toastService: ToastService
   ) { }
 
   async copyPrompt() {
@@ -79,5 +84,35 @@ export class ProjectHeroComponent {
     if (this.project.demoUrl) {
       window.open(this.project.demoUrl, '_blank');
     }
+  }
+
+  likeProject() {
+    if (!this.authService.isAuthenticated()) {
+      this.router.navigate(['/auth/login'], { queryParams: { returnUrl: this.router.url } });
+      return;
+    }
+
+    if (this.isLiking() || this.hasLiked()) return;
+
+    this.isLiking.set(true);
+    this.projectService.recordLike(this.project.id).subscribe({
+      next: (response) => {
+        this.isLiking.set(false);
+        this.hasLiked.set(true);
+        if (response.data?.likes !== undefined) {
+          this.project.likes = response.data.likes;
+        }
+        this.toastService.success('Thanks for the like!');
+      },
+      error: (err) => {
+        this.isLiking.set(false);
+        if (err.status === 400) {
+          this.hasLiked.set(true);
+          this.toastService.info('You already liked this project');
+        } else {
+          this.toastService.error('Failed to like project');
+        }
+      }
+    });
   }
 }

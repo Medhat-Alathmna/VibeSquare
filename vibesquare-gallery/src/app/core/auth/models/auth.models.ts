@@ -24,7 +24,7 @@ export interface AuthResponse {
     success: boolean;
     message: string;
     data: {
-        user: SafeGalleryUser;
+        user: SafeGalleryUser |any;
         accessToken: string;
     } | null;
 }

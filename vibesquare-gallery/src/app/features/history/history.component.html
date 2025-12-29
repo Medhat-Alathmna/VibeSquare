@@ -1,0 +1,296 @@
+<div class="min-h-screen bg-dark-bg text-white">
+  <div class="max-w-6xl mx-auto px-4 py-8">
+    <!-- Header -->
+    <div class="mb-8">
+      <h1 class="text-3xl font-display font-bold text-white mb-2">Analysis History</h1>
+      <p class="text-gray-400">View and manage your previous website analyses</p>
+    </div>
+
+    <!-- Loading State -->
+    @if (isLoading() && analyses().length === 0) {
+      <div class="flex items-center justify-center py-20">
+        <div class="flex items-center gap-3 text-gray-400">
+          <svg class="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>Loading history...</span>
+        </div>
+      </div>
+    }
+
+    <!-- Error State -->
+    @if (error()) {
+      <div class="bg-red-500/10 border border-red-500/20 rounded-lg p-4 mb-6">
+        <div class="flex items-center gap-3 text-red-400">
+          <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+          <span>{{ error() }}</span>
+        </div>
+      </div>
+    }
+
+    <!-- Empty State -->
+    @if (!isLoading() && analyses().length === 0 && !error()) {
+      <div class="text-center py-20">
+        <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-dark-surface flex items-center justify-center">
+          <svg class="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-white mb-2">No analyses yet</h3>
+        <p class="text-gray-400 mb-6">Start analyzing websites to see your history here</p>
+        <a
+          routerLink="/explore"
+          class="inline-flex items-center gap-2 px-6 py-3 bg-secondary text-black font-semibold rounded-lg hover:bg-secondary/90 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+          </svg>
+          Start Exploring
+        </a>
+      </div>
+    }
+
+    <!-- History List -->
+    @if (analyses().length > 0) {
+      <div class="space-y-4">
+        @for (analysis of analyses(); track analysis.id) {
+          <div
+            (click)="viewAnalysis(analysis)"
+            class="bg-dark-surface border border-dark-border rounded-xl p-5 hover:border-secondary/50 transition-all cursor-pointer group">
+            <div class="flex flex-col md:flex-row md:items-center gap-4">
+              <!-- Main Info -->
+              <div class="flex-1 min-w-0">
+                <!-- URL -->
+                <div class="flex items-center gap-2 mb-2">
+                  <svg class="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                  </svg>
+                  <span class="text-sm text-gray-400 truncate">{{ analysis.url }}</span>
+                </div>
+
+                <!-- Title -->
+                <h3 class="text-lg font-semibold text-white truncate group-hover:text-secondary transition-colors">
+                  {{ analysis.pageTitle || 'Untitled Analysis' }}
+                </h3>
+
+                <!-- Description -->
+                @if (analysis.pageDescription) {
+                  <p class="text-sm text-gray-400 mt-1 line-clamp-2">{{ analysis.pageDescription }}</p>
+                }
+              </div>
+
+              <!-- Meta Info -->
+              <div class="flex flex-wrap items-center gap-3 md:flex-col md:items-end md:gap-2">
+                <!-- Status Badge -->
+                <span
+                  class="px-2.5 py-1 text-xs font-medium rounded-full {{ getStatusColor(analysis.status) }} {{ getStatusBgColor(analysis.status) }}">
+                  {{ analysis.status }}
+                </span>
+
+                <!-- Tokens -->
+                <div class="flex items-center gap-1.5 text-sm text-gray-400">
+                  <svg class="w-4 h-4 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                  </svg>
+                  <span>{{ formatTokens(analysis.tokensUsed) }} tokens</span>
+                </div>
+
+                <!-- Date -->
+                <span class="text-sm text-gray-500">{{ formatDate(analysis.createdAt) }}</span>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-2 mt-4 pt-4 border-t border-dark-border">
+              <!-- View Button -->
+              <button
+                (click)="viewAnalysis(analysis); $event.stopPropagation()"
+                [disabled]="loadingAnalysisId() === analysis.id"
+                class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-dark-bg rounded-lg hover:bg-dark-border transition-colors disabled:opacity-50">
+                @if (loadingAnalysisId() === analysis.id) {
+                  <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                } @else {
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  </svg>
+                }
+                <span>View</span>
+              </button>
+
+              <!-- Copy Button -->
+              <button
+                (click)="copyFromList(analysis, $event)"
+                [disabled]="loadingAnalysisId() === analysis.id"
+                class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-dark-bg rounded-lg hover:bg-dark-border transition-colors disabled:opacity-50">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+                </svg>
+                <span>Copy</span>
+              </button>
+
+              <!-- Spacer -->
+              <div class="flex-1"></div>
+
+              <!-- Delete Button -->
+              <button
+                (click)="deleteAnalysis(analysis.id, $event)"
+                [disabled]="deletingId() === analysis.id"
+                class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-400 bg-red-400/10 rounded-lg hover:bg-red-400/20 transition-colors disabled:opacity-50">
+                @if (deletingId() === analysis.id) {
+                  <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                } @else {
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                }
+                <span>Delete</span>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- Pagination -->
+      @if (totalPages() > 1) {
+        <div class="flex items-center justify-center gap-2 mt-8">
+          <!-- Previous -->
+          <button
+            (click)="prevPage()"
+            [disabled]="!hasPrev()"
+            class="p-2 rounded-lg bg-dark-surface border border-dark-border hover:bg-dark-border disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+          </button>
+
+          <!-- Page Numbers -->
+          @for (page of getPaginationRange(); track page) {
+            <button
+              (click)="goToPage(page)"
+              [class.bg-secondary]="page === currentPage()"
+              [class.text-black]="page === currentPage()"
+              [class.bg-dark-surface]="page !== currentPage()"
+              [class.border-dark-border]="page !== currentPage()"
+              class="w-10 h-10 rounded-lg border font-medium transition-colors hover:bg-dark-border">
+              {{ page }}
+            </button>
+          }
+
+          <!-- Next -->
+          <button
+            (click)="nextPage()"
+            [disabled]="!hasNext()"
+            class="p-2 rounded-lg bg-dark-surface border border-dark-border hover:bg-dark-border disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Page Info -->
+        <p class="text-center text-sm text-gray-500 mt-4">
+          Showing {{ analyses().length }} of {{ totalItems() }} analyses
+        </p>
+      }
+    }
+  </div>
+</div>
+
+<!-- Modal -->
+@if (showModal() && selectedAnalysis()) {
+  <div
+    (click)="closeModal()"
+    class="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div
+      (click)="$event.stopPropagation()"
+      class="bg-dark-surface border border-dark-border rounded-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between p-6 border-b border-dark-border">
+        <div class="flex-1 min-w-0 pr-4">
+          <h2 class="text-xl font-semibold text-white truncate">
+            {{ selectedAnalysis()?.pageTitle || 'Analysis Details' }}
+          </h2>
+          <p class="text-sm text-gray-400 truncate mt-1">{{ selectedAnalysis()?.url }}</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <!-- Copy Button -->
+          <button
+            (click)="copyPrompt(selectedAnalysis()?.prompt || '')"
+            class="flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-lg transition-colors"
+            [class.bg-green-500]="copySuccess()"
+            [class.text-white]="copySuccess()"
+            [class.bg-secondary]="!copySuccess()"
+            [class.text-black]="!copySuccess()">
+            @if (copySuccess()) {
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+              </svg>
+              <span>Copied!</span>
+            } @else {
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"/>
+              </svg>
+              <span>Copy Prompt</span>
+            }
+          </button>
+          <!-- Close Button -->
+          <button
+            (click)="closeModal()"
+            class="p-2 text-gray-400 hover:text-white rounded-lg hover:bg-dark-bg transition-colors">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <!-- Modal Meta -->
+      <div class="flex flex-wrap items-center gap-4 px-6 py-4 bg-dark-bg/50 border-b border-dark-border">
+        <!-- Status -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-500 uppercase">Status</span>
+          <span
+            class="px-2 py-0.5 text-xs font-medium rounded-full {{ getStatusColor(selectedAnalysis()?.status || '') }} {{ getStatusBgColor(selectedAnalysis()?.status || '') }}">
+            {{ selectedAnalysis()?.status }}
+          </span>
+        </div>
+
+        <!-- Tokens -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-500 uppercase">Tokens</span>
+          <span class="text-sm text-white font-medium">{{ formatTokens(selectedAnalysis()?.tokensUsed || 0) }}</span>
+        </div>
+
+        <!-- Date -->
+        <div class="flex items-center gap-2">
+          <span class="text-xs text-gray-500 uppercase">Created</span>
+          <span class="text-sm text-white">{{ formatDate(selectedAnalysis()?.createdAt || '') }}</span>
+        </div>
+
+        <!-- Model -->
+        @if (selectedAnalysis()?.metadata?.model) {
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-gray-500 uppercase">Model</span>
+            <span class="text-sm text-white">{{ selectedAnalysis()?.metadata?.model }}</span>
+          </div>
+        }
+      </div>
+
+      <!-- Modal Content -->
+      <div class="flex-1 overflow-y-auto p-6">
+        <div class="prose prose-invert max-w-none">
+          <pre class="whitespace-pre-wrap bg-dark-bg rounded-lg p-4 text-sm text-gray-300 font-mono overflow-x-auto">{{ selectedAnalysis()?.prompt }}</pre>
+        </div>
+      </div>
+    </div>
+  </div>
+}

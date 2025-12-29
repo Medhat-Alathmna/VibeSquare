@@ -62,6 +62,28 @@ export const routes: Routes = [
     title: 'Notifications - VibeSquare Gallery'
   },
   {
+    path: 'subscription',
+    loadComponent: () => import('./features/subscription/subscription.component').then(m => m.SubscriptionComponent),
+    canActivate: [authGuard],
+    title: 'Subscription - VibeSquare Gallery'
+  },
+  {
+    path: 'subscription/success',
+    loadComponent: () => import('./features/subscription/subscription-success.component').then(m => m.SubscriptionSuccessComponent),
+    title: 'Subscription Success - VibeSquare Gallery'
+  },
+  {
+    path: 'subscription/cancel',
+    loadComponent: () => import('./features/subscription/subscription-cancel.component').then(m => m.SubscriptionCancelComponent),
+    title: 'Subscription Cancelled - VibeSquare Gallery'
+  },
+  {
+    path: 'history',
+    loadComponent: () => import('./features/history/history.component').then(m => m.HistoryComponent),
+    canActivate: [authGuard],
+    title: 'Analysis History - VibeSquare Gallery'
+  },
+  {
     path: '**',
     redirectTo: '/explore'
   }

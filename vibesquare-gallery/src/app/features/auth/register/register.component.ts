@@ -3,7 +3,6 @@ import { CommonModule } from '@angular/common';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { AuthService } from '../../../core/auth/services/auth.service';
-import { catchError, throwError } from 'rxjs';
 import { SocialLoginButtonsComponent } from '../components/social-login-buttons/social-login-buttons.component';
 
 @Component({
@@ -42,18 +41,22 @@ export class RegisterComponent {
 
         const { username, email, password } = this.registerForm.value;
 
-        this.authService.register({ username: username!, email: email!, password: password! }).pipe(
-            catchError(err => {
+        this.authService.register({ username: username!, email: email!, password: password! }).subscribe({
+            next: (response) => {
+                this.isLoading = false;
+                if (response.success) {
+                    // Redirect to login or show success message suggesting to verify email
+                    this.router.navigate(['/auth/login'], { queryParams: { registered: 'true' } });
+                } else {
+                    // Handle case where backend returns 200 with success: false
+                    this.errorMessage = response.message || 'Registration failed. Please try again.';
+                }
+            },
+            error: (err) => {
                 this.isLoading = false;
                 this.errorMessage = err.error?.message || 'Registration failed. Please try again.';
-                return throwError(() => err);
-            })
-        ).subscribe(response => {
-            this.isLoading = false;
-            if (response.success) {
-                // Redirect to login or show success message suggesting to verify email
-                // For now, redirect to login with a query param
-                this.router.navigate(['/auth/login'], { queryParams: { registered: 'true' } });
+            },complete:()=>{
+                this.isLoading = false;
             }
         });
     }

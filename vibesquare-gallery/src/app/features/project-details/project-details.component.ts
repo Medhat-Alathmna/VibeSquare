@@ -42,14 +42,36 @@ export class ProjectDetailsComponent implements OnInit {
   }
 
   private loadProject(id: string) {
-    const foundProject = this.projectService.getProjectById(id);
-    if (foundProject) {
-      this.project.set(foundProject);
+    // First try from cache
+    const cachedProject = this.projectService.getProjectById(id);
+    if (cachedProject) {
+      this.project.set(cachedProject);
       this.loading.set(false);
-    } else {
-      this.notFound.set(true);
-      this.loading.set(false);
+      // Record view
+      this.projectService.recordView(id).subscribe();
+      return;
     }
+
+    // Fetch from API
+    this.projectService.getProjectByIdFromApi(id).subscribe({
+      next: (response) => {
+        if (response.data) {
+          this.project.set(response.data);
+          this.loading.set(false);
+          // Record view
+          this.projectService.recordView(id).subscribe();
+        } else {
+          this.notFound.set(true);
+          this.loading.set(false);
+        }
+      },
+      error: (err) => {
+        if (err.status === 404) {
+          this.notFound.set(true);
+        }
+        this.loading.set(false);
+      }
+    });
   }
 
   goBack() {

@@ -1,0 +1,121 @@
+<div class="subscription-card" [class.compact]="compact()">
+    <!-- Current Plan -->
+    <div class="current-plan">
+        <div class="flex items-center justify-between mb-4">
+            <div>
+                <h3 class="text-lg font-display font-bold text-white">
+                    {{ isPremium() ? 'Pro Plan' : 'Free Plan' }}
+                </h3>
+                <p class="text-sm text-gray-400">
+                    @if (isPremium()) {
+                        @if (isCanceled()) {
+                            <span class="text-yellow-400">Cancels in {{ daysRemaining() }} days</span>
+                        } @else {
+                            <span class="text-green-400">{{ statusLabel() }}</span>
+                        }
+                    } @else {
+                        Upgrade for more tokens
+                    }
+                </p>
+            </div>
+            <div class="flex items-center gap-2">
+                @if (isPremium()) {
+                    <span class="px-3 py-1 text-xs font-bold bg-secondary/20 text-secondary rounded-full">PRO</span>
+                } @else {
+                    <span class="px-3 py-1 text-xs font-medium bg-gray-500/20 text-gray-400 rounded-full">FREE</span>
+                }
+            </div>
+        </div>
+
+        <!-- Quota Display -->
+        <div class="quota-section mb-4">
+            <div class="flex items-center justify-between mb-2">
+                <span class="text-sm text-gray-400">Token Usage</span>
+                <span class="text-sm text-white">{{ formatNumber(tokensRemaining()) }} / {{ formatNumber(tokensLimit())
+                    }}</span>
+            </div>
+            <div class="h-2 bg-dark-border rounded-full overflow-hidden">
+                <div class="h-full rounded-full transition-all duration-300"
+                    [class.bg-red-500]="usagePercentage() >= 90" [class.bg-yellow-500]="usagePercentage() >= 70 && usagePercentage() < 90"
+                    [class.bg-secondary]="usagePercentage() < 70" [style.width.%]="usagePercentage()">
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        @if (showActions()) {
+            <div class="actions flex gap-3">
+                @if (!isPremium() && canUpgrade()) {
+                    <app-button variant="primary" class="flex-1" [disabled]="isLoading()" (click)="onUpgrade()">
+                        @if (isLoading()) {
+                            <span class="flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
+                                        stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor"
+                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                                </svg>
+                                Loading...
+                            </span>
+                        } @else {
+                            <span class="flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                                </svg>
+                                Upgrade to Pro
+                            </span>
+                        }
+                    </app-button>
+                } @else if (isPremium()) {
+                    @if (isCanceled()) {
+                        <app-button variant="primary" class="flex-1" [disabled]="isLoading()" (click)="onReactivate()">
+                            Reactivate Subscription
+                        </app-button>
+                    } @else {
+                        <app-button variant="outline" class="flex-1" [disabled]="isLoading()" (click)="onManage()">
+                            Manage Subscription
+                        </app-button>
+                    }
+                }
+            </div>
+        }
+    </div>
+
+    <!-- Upgrade Promo (for free users) -->
+    @if (!isPremium() && !compact()) {
+        <div class="upgrade-promo mt-4 p-4 bg-gradient-to-r from-secondary/10 to-purple-500/10 border border-secondary/30 rounded-xl">
+            <div class="flex items-start gap-3">
+                <div class="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center flex-shrink-0">
+                    <svg class="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                    </svg>
+                </div>
+                <div>
+                    <h4 class="text-white font-semibold mb-1">Upgrade to Pro</h4>
+                    <p class="text-sm text-gray-400 mb-3">
+                        Get {{ upgradeInfo()?.limit ? formatNumber(upgradeInfo()!.limit) : '400K' }} tokens per week
+                        @if (upgradeInfo()?.price) {
+                            for just {{ upgradeInfo()?.price }}
+                        }
+                    </p>
+                    <ul class="text-sm text-gray-300 space-y-1">
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            4x more tokens
+                        </li>
+                        <li class="flex items-center gap-2">
+                            <svg class="w-4 h-4 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                            </svg>
+                            Priority support
+                        </li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    }
+</div>

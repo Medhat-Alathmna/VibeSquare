@@ -1,35 +1,53 @@
 import { Injectable, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { BehaviorSubject, Observable, tap, catchError, of, throwError } from 'rxjs';
-import { API_CONFIG } from '../../constants/api.constants';
 import { LoginPayload, RegisterPayload, AuthResponse, SafeGalleryUser, RefreshTokenResponse, VerifyEmailPayload, OAuthProvider } from '../models/auth.models';
+import { ApiService } from '../../api.service';
+import { environment } from '../../../../environments/environment';
 
 @Injectable({
     providedIn: 'root'
 })
 export class AuthService {
-    private apiUrl = `${API_CONFIG.baseUrl}/auth`;
     private accessTokenKey = 'gallery_access_token';
+    private userKey = 'gallery_user';
 
     // Signal for current user state
     currentUser = signal<SafeGalleryUser | null>(null);
     isAuthenticated = signal<boolean>(false);
 
-    constructor(private http: HttpClient) {
-        this.loadToken();
+    constructor(private apiService: ApiService) {
+        this.loadSession();
     }
 
-    private loadToken() {
+    private loadSession() {
         const token = localStorage.getItem(this.accessTokenKey);
+        const savedUser = localStorage.getItem(this.userKey);
+
         if (token) {
             this.isAuthenticated.set(true);
-            // Ideally we would validate token or fetch user here
-            this.getCurrentUser().subscribe();
+
+            // Load cached user immediately for UI
+            if (savedUser) {
+                try {
+                    const user = JSON.parse(savedUser);
+                    this.currentUser.set(user);
+                } catch {
+                    // Invalid JSON, ignore
+                }
+            }
+
+            // Refresh user data from server in background
+            this.getCurrentUser().subscribe({
+                error: () => {
+                    // Don't clear session on error - user data is still in localStorage
+                    // Only clear if we get explicit 401 from /me endpoint
+                }
+            });
         }
     }
 
     login(payload: LoginPayload): Observable<AuthResponse> {
-        return this.http.post<AuthResponse>(`${this.apiUrl}/login`, payload).pipe(
+        return this.apiService.postGuest<AuthResponse>('gallery/auth/login', payload).pipe(
             tap(response => {
                 if (response.success && response.data) {
                     this.setSession(response.data.accessToken, response.data.user);
@@ -39,15 +57,15 @@ export class AuthService {
     }
 
     register(payload: RegisterPayload): Observable<AuthResponse> {
-        return this.http.post<AuthResponse>(`${this.apiUrl}/register`, payload);
+        return this.apiService.postGuest<AuthResponse>('gallery/auth/register', payload);
     }
 
     verifyEmail(payload: VerifyEmailPayload): Observable<any> {
-        return this.http.post(`${this.apiUrl}/verify-email`, payload);
+        return this.apiService.postGuest('gallery/auth/verify-email', payload);
     }
 
     logout(): Observable<any> {
-        return this.http.post(`${this.apiUrl}/logout`, {}).pipe(
+        return this.apiService.post('gallery/auth/logout', {}).pipe(
             tap(() => this.clearSession()),
             catchError(() => {
                 this.clearSession();
@@ -59,7 +77,7 @@ export class AuthService {
     refreshToken(): Observable<RefreshTokenResponse> {
         // Cookie is handled by browser/interceptor usually, but here we just call the endpoint
         // with credentials: true setting in interceptor
-        return this.http.post<RefreshTokenResponse>(`${this.apiUrl}/refresh`, {}, { withCredentials: true }).pipe(
+        return this.apiService.post<RefreshTokenResponse>('gallery/auth/refresh', {}, { withCredentials: true }).pipe(
             tap(response => {
                 if (response.success) {
                     localStorage.setItem(this.accessTokenKey, response.data.accessToken);
@@ -70,12 +88,14 @@ export class AuthService {
 
     private setSession(token: string, user: SafeGalleryUser) {
         localStorage.setItem(this.accessTokenKey, token);
+        localStorage.setItem(this.userKey, JSON.stringify(user));
         this.currentUser.set(user);
         this.isAuthenticated.set(true);
     }
 
     private clearSession() {
         localStorage.removeItem(this.accessTokenKey);
+        localStorage.removeItem(this.userKey);
         this.currentUser.set(null);
         this.isAuthenticated.set(false);
     }
@@ -86,26 +106,31 @@ export class AuthService {
 
     // Fetch current user helper
     getCurrentUser(): Observable<any> {
-        return this.http.get<any>(`${this.apiUrl}/me`).pipe(
+        return this.apiService.get<any>('gallery/auth/me').pipe(
             tap(response => {
                 if (response.success) {
                     this.currentUser.set(response.data);
                     this.isAuthenticated.set(true);
+                    // Update cached user data
+                    localStorage.setItem(this.userKey, JSON.stringify(response.data));
                 }
             }),
             catchError(err => {
-                this.clearSession();
+                // Only clear session on 401 (unauthorized)
+                if (err.status === 401) {
+                    this.clearSession();
+                }
                 return throwError(() => err);
             })
         );
     }
 
     forgotPassword(email: string): Observable<any> {
-        return this.http.post(`${this.apiUrl}/forgot-password`, { email });
+        return this.apiService.postGuest('gallery/auth/forgot-password', { email });
     }
 
     resetPassword(password: string, token: string): Observable<any> {
-        return this.http.post(`${this.apiUrl}/reset-password`, { newPassword: password }, {
+        return this.apiService.postGuest('gallery/auth/reset-password', { newPassword: password }, {
             headers: { Authorization: `Bearer ${token}` }
         });
     }
@@ -117,8 +142,10 @@ export class AuthService {
             ? window.location.pathname
             : '/explore';
         localStorage.setItem('oauth_return_url', returnUrl);
-        const apiUrl= this.apiUrl.replace('/gallery', '');
-        window.location.href = `${apiUrl}/${provider}`;
+        // Constructed to match previous logic: .../auth/{provider}
+        // Previously: this.apiUrl.replace('/gallery', '') which was .../auth
+        const authUrl = `${environment.apiUrl}/auth`;
+        window.location.href = `${authUrl}/${provider}`;
     }
 
     handleOAuthCallback(token: string): Observable<any> {

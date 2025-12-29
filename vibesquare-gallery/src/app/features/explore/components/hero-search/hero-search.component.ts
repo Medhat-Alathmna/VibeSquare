@@ -25,6 +25,7 @@ export class HeroSearchComponent implements OnInit, OnDestroy {
   // Inputs
   placeholder = input<string>('Paste your website URL...');
   showSubtitle = input<boolean>(true);
+  externalLoading = input<boolean>(false);
 
   // Outputs
   search = output<SearchEvent>();
@@ -49,6 +50,7 @@ export class HeroSearchComponent implements OnInit, OnDestroy {
   // Computed
   isValidUrl = computed(() => this.validateUrl(this.urlInput()));
   currentWord = computed(() => this.rotatingWords[this.currentWordIndex()]);
+  isDisabled = computed(() => this.isLoading() || this.externalLoading() || !this.isValidUrl());
 
   ngOnInit() {
     this.startWordRotation();

@@ -1,0 +1,87 @@
+<div class="modal-content">
+    <!-- Header with Warning Icon -->
+    <div class="modal-header">
+        <div class="w-16 h-16 mx-auto rounded-full bg-yellow-500/20 flex items-center justify-center mb-4">
+            <svg class="w-8 h-8 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+            </svg>
+        </div>
+        <h3 class="text-xl font-display font-bold text-white text-center">Token Quota Exceeded</h3>
+        <p class="text-sm text-gray-400 text-center mt-2">
+            You've used all your available tokens this period.
+        </p>
+    </div>
+
+    <!-- Body -->
+    <div class="modal-body">
+        <!-- Current Status -->
+        <div class="p-4 bg-dark-bg rounded-lg border border-dark-border mb-4">
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-gray-400">Available Tokens</span>
+                <span class="text-red-400 font-bold">{{ formatNumber(data.tokensAvailable) }}</span>
+            </div>
+            @if (data.tokensRequired) {
+            <div class="flex items-center justify-between mb-3">
+                <span class="text-gray-400">Required Tokens</span>
+                <span class="text-white font-medium">{{ formatNumber(data.tokensRequired) }}</span>
+            </div>
+            <div class="flex items-center justify-between pt-3 border-t border-dark-border">
+                <span class="text-gray-400">Shortage</span>
+                <span class="text-red-400 font-bold">{{ formatNumber(shortage) }}</span>
+            </div>
+            }
+        </div>
+
+        <!-- Reset Info -->
+        <div class="p-4 bg-secondary/10 border border-secondary/30 rounded-lg">
+            <div class="flex items-center gap-3">
+                <svg class="w-5 h-5 text-secondary flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <div>
+                    <p class="text-sm text-secondary font-medium">Quota resets in {{ resetTimeString }}</p>
+                    <p class="text-xs text-gray-400 mt-0.5">{{ resetDateFormatted }}</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Upgrade Promo -->
+        @if (data.upgradeAvailable !== false) {
+        <div class="mt-4 p-4 bg-gradient-to-r from-purple-500/10 to-secondary/10 border border-purple-500/30 rounded-lg">
+            <div class="flex items-start gap-3">
+                <svg class="w-5 h-5 text-purple-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor"
+                    viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+                <div>
+                    <p class="text-sm text-white font-medium">Upgrade to Pro</p>
+                    <p class="text-xs text-gray-400 mt-1">Get 400,000 tokens per week with Pro subscription.</p>
+                </div>
+            </div>
+        </div>
+        }
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer">
+        <button (click)="onWait()"
+            class="flex-1 px-5 py-2.5 text-sm font-medium text-gray-400 hover:text-white transition-colors rounded-lg border border-dark-border hover:bg-dark-border/50">
+            Wait for Reset
+        </button>
+
+        @if (data.upgradeAvailable !== false) {
+        <app-button variant="primary" class="flex-1" (click)="onUpgrade()">
+            <span class="flex items-center justify-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+                </svg>
+                Upgrade to Pro
+            </span>
+        </app-button>
+        }
+    </div>
+</div>

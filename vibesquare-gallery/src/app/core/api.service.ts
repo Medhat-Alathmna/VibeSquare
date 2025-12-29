@@ -1,122 +1,124 @@
 import { Injectable } from '@angular/core';
-import { HttpClient, HttpEvent, HttpHeaders, HttpParams } from '@angular/common/http';
-import { BehaviorSubject, Observable } from 'rxjs';
-
+import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
+import { Observable } from 'rxjs';
 import { environment } from '../../environments/environment';
-export interface HttpOptions {
-  post<T>(url: string, body: any | null, options?: {
-    headers?: HttpHeaders | {
-      [header: string]: string | string[];
-    };
-    observe?: 'body';
-    params?: HttpParams | {
-      [param: string]: string | string[];
-    };
-    reportProgress?: boolean;
-    responseType?: 'json';
-    withCredentials?: boolean;
-  }): Observable<T>;
+
+export interface ApiOptions {
+  headers?: HttpHeaders | { [header: string]: string | string[] };
+  context?: any;
+  observe?: any;
+  params?: HttpParams | { [param: string]: string | string[] };
+  reportProgress?: boolean;
+  responseType?: any;
+  withCredentials?: boolean;
+  body?: any;
 }
 
 @Injectable({
   providedIn: 'root'
 })
 export class ApiService {
+  private readonly apiUrl: string;
+  private readonly tokenKey = 'gallery_access_token';
 
-  private readonly apiUrl
-    token = localStorage.getItem('gallery_access_token');
   constructor(private httpClient: HttpClient) {
     let url = environment.apiUrl;
+    // Ensure no trailing slash
     if (url.charAt(url.length - 1) === '/') {
       url = url.slice(0, url.length - 1);
     }
-    this.apiUrl = url;    
+    this.apiUrl = url;
   }
 
+  private getHeaders(customHeaders?: HttpHeaders | { [header: string]: string | string[] }): HttpHeaders {
+    let headers = new HttpHeaders();
 
-  post<T>(url: string, body: any | null): Observable<T> {
-    url = url.charAt(0) === '/' ? url : `/${url}`;
-    return this.httpClient.post<T>(`${this.apiUrl}${url}`, body, {
-      headers: this.getHeaders()
-    });
-  }
-postBlob(url: string, body: any | null): Observable<Blob> {
-  url = url.charAt(0) === '/' ? url : `/${url}`;
-  return this.httpClient.post(`${this.apiUrl}${url}`, body, {
-    headers: this.getHeaders(),
-    responseType: 'blob' 
-  });
-}
+    // Set Content-Type for JSON requests
+    headers = headers.set('Content-Type', 'application/json');
 
-  patch<T>(url: string, body: any | null): Observable<T> {
-    url = url.charAt(0) === '/' ? url : `/${url}`;
-    return this.httpClient.patch<T>(`${this.apiUrl}${url}`, body, {
-      headers: this.getHeaders()
-    });
-  }
+    // Add Authorization header if token exists
+    const token = localStorage.getItem(this.tokenKey);
+    if (token) {
+      headers = headers.set('Authorization', `Bearer ${token}`);
+    }
 
-  put<T>(url: string, body: any | null): Observable<T> {
-    url = url.charAt(0) === '/' ? url : `/${url}`;
-    return this.httpClient.put<T>(`${this.apiUrl}${url}`, body, {
-      headers: this.getHeaders()
-    });
-  }
+    // Merge custom headers
+    if (customHeaders) {
+      if (customHeaders instanceof HttpHeaders) {
+        customHeaders.keys().forEach(key => {
+          headers = headers.set(key, customHeaders.get(key)!);
+        });
+      } else {
+        Object.keys(customHeaders).forEach(key => {
+          headers = headers.set(key, (customHeaders as any)[key]);
+        });
+      }
+    }
 
-  get<T>(url: string): Observable<T> {
-    url = url.charAt(0) === '/' ? url : `/${url}`;
-
-
-    return this.httpClient.get<T>(`${this.apiUrl}${url}`, {
-      headers: this.getHeaders()
-    })
+    return headers;
   }
 
-  getFile<T>(url: string): Observable<T> {
-    url = url.charAt(0) === '/' ? url : `/${url}`;
-    return this.httpClient.get<T>(`${this.apiUrl}${url}`, {
-      responseType:'blob' as 'json',
-      headers: this.getHeaders()
-    })
+  // Helper to construct options for HttpClient
+  private createHttpOptions(options: ApiOptions = {}): any {
+    const httpOptions: any = { ...options };
+    httpOptions.headers = this.getHeaders(options.headers);
+    return httpOptions;
   }
 
-  delete<T>(url: string): Observable<T> {
-    url = url.charAt(0) === '/' ? url : `/${url}`;
-
-
-    return this.httpClient.delete<T>(`${this.apiUrl}${url}`, {
-      headers: this.getHeaders()
-    })
-  }
-  deletebody<T>(url: string,body:any): Observable<T> {
-    url = url.charAt(0) === '/' ? url : `/${url}`;
-
-    return this.httpClient.delete<T>(`${this.apiUrl}${url}`, {
-      headers: this.getHeaders(),
-      body:body
-    })
+  // Helper to ensure URL starts with /
+  private formatUrl(url: string): string {
+    return url.charAt(0) === '/' ? url : `/${url}`;
   }
 
-  postGuest<T>(url: string, body: any | null): Observable<T> {
-    const headers = new HttpHeaders({
-    });
-    url = url.charAt(0) === '/' ? url : `/${url}`;
-    return this.httpClient.post<T>(`${this.apiUrl}${url}`, body,{
-      headers
-    });
-  }
-  deleteBody<T>(url: string, body: any | null, options?: HttpOptions): Observable<T> {
-    url = url.charAt(0) === '/' ? url : `/${url}`;
-    return this.httpClient.delete<T>(`${this.apiUrl}${url}`, { body ,
-      headers: this.getHeaders()});
-  }
-  private getHeaders() {
-    const headers = new HttpHeaders({
-      Authorization: `Bearer ${this.token}`,
-    });
-
-    return headers
+  post<T>(url: string, body: any | null, options?: ApiOptions): Observable<T> {
+    return this.httpClient.post<T>(`${this.apiUrl}${this.formatUrl(url)}`, body, this.createHttpOptions(options)) as Observable<T>;
   }
 
+  postBlob(url: string, body: any | null, options?: ApiOptions): Observable<Blob> {
+    const httpOptions = this.createHttpOptions(options);
+    httpOptions.responseType = 'blob';
+    return this.httpClient.post(`${this.apiUrl}${this.formatUrl(url)}`, body, httpOptions) as unknown as Observable<Blob>;
+  }
+
+  patch<T>(url: string, body: any | null, options?: ApiOptions): Observable<T> {
+    return this.httpClient.patch<T>(`${this.apiUrl}${this.formatUrl(url)}`, body, this.createHttpOptions(options)) as Observable<T>;
+  }
+
+  put<T>(url: string, body: any | null, options?: ApiOptions): Observable<T> {
+    return this.httpClient.put<T>(`${this.apiUrl}${this.formatUrl(url)}`, body, this.createHttpOptions(options)) as Observable<T>;
+  }
+
+  get<T>(url: string, options?: ApiOptions): Observable<T> {
+    return this.httpClient.get<T>(`${this.apiUrl}${this.formatUrl(url)}`, this.createHttpOptions(options)) as Observable<T>;
+  }
+
+  getFile<T>(url: string, options?: ApiOptions): Observable<T> {
+    const httpOptions = this.createHttpOptions(options);
+    httpOptions.responseType = 'blob'; // 'blob' as 'json' was weird in original code. 'blob' is correct.
+    return this.httpClient.get<T>(`${this.apiUrl}${this.formatUrl(url)}`, httpOptions) as Observable<T>;
+  }
+
+  delete<T>(url: string, options?: ApiOptions): Observable<T> {
+    return this.httpClient.delete<T>(`${this.apiUrl}${this.formatUrl(url)}`, this.createHttpOptions(options)) as Observable<T>;
+  }
+
+  postGuest<T>(url: string, body: any | null, options?: ApiOptions): Observable<T> {
+    const httpOptions: any = { ...options };
+    let headers = new HttpHeaders();
+
+    // Merge custom headers if any
+    if (options?.headers) {
+      const customHeaders = options.headers;
+      if (customHeaders instanceof HttpHeaders) {
+        customHeaders.keys().forEach(key => headers = headers.set(key, customHeaders.get(key)!));
+      } else {
+        Object.keys(customHeaders).forEach(key => headers = headers.set(key, (customHeaders as any)[key]));
+      }
+    }
+    httpOptions.headers = headers;
+
+    return this.httpClient.post<T>(`${this.apiUrl}${this.formatUrl(url)}`, body, httpOptions) as Observable<T>;
+  }
 }
 
 

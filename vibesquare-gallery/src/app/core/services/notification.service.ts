@@ -1,28 +1,25 @@
 import { Injectable, signal } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
 import { Observable, tap } from 'rxjs';
-import { API_CONFIG } from '../constants/api.constants';
 import { NotificationResponse } from '../models/notification.model';
+import { ApiService } from '../api.service';
 
 @Injectable({
     providedIn: 'root'
 })
 export class NotificationService {
-    private apiUrl = `${API_CONFIG.baseUrl}/notifications`;
-
     // Signal for unread count
     unreadCount = signal<number>(0);
 
-    constructor(private http: HttpClient) { }
+    constructor(private apiService: ApiService) { }
 
     getNotifications(page = 1, limit = 20): Observable<NotificationResponse> {
-        return this.http.get<NotificationResponse>(this.apiUrl, {
-            params: { page, limit }
+        return this.apiService.get<NotificationResponse>('gallery/notifications', {
+            params: { page: page.toString(), limit: limit.toString() }
         });
     }
 
     getUnreadCount(): Observable<any> {
-        return this.http.get(`${this.apiUrl}/unread-count`).pipe(
+        return this.apiService.get('gallery/notifications/unread-count').pipe(
             tap((res: any) => {
                 if (res.success) {
                     this.unreadCount.set(res.data.count);
@@ -32,18 +29,18 @@ export class NotificationService {
     }
 
     markAsRead(id: string): Observable<any> {
-        return this.http.patch(`${this.apiUrl}/${id}/read`, {}).pipe(
+        return this.apiService.patch(`gallery/notifications/${id}/read`, {}).pipe(
             tap(() => this.getUnreadCount().subscribe()) // Update count
         );
     }
 
     markAllAsRead(): Observable<any> {
-        return this.http.patch(`${this.apiUrl}/read-all`, {}).pipe(
+        return this.apiService.patch('gallery/notifications/read-all', {}).pipe(
             tap(() => this.unreadCount.set(0))
         );
     }
 
     deleteNotification(id: string): Observable<any> {
-        return this.http.delete(`${this.apiUrl}/${id}`);
+        return this.apiService.delete(`gallery/notifications/${id}`);
     }
 }

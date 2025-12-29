@@ -1,0 +1,31 @@
+.subscription-page {
+    min-height: 100vh;
+    background-color: #1a1a1a;
+}
+
+.pricing-card {
+    position: relative;
+    background-color: #2a2a2a;
+    border: 1px solid #3a3a3a;
+    border-radius: 1rem;
+    padding: 2rem;
+    transition: all 0.3s ease;
+}
+
+.pricing-card:hover {
+    border-color: #4a4a4a;
+    transform: translateY(-4px);
+}
+
+.pricing-card.recommended {
+    border-color: rgba(23, 255, 220, 0.3);
+    background: linear-gradient(180deg, rgba(23, 255, 220, 0.05) 0%, transparent 100%);
+}
+
+.pricing-card.recommended:hover {
+    border-color: rgba(23, 255, 220, 0.5);
+}
+
+.pricing-card.current {
+    border-color: rgba(23, 255, 220, 0.5);
+}
