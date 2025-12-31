@@ -42,17 +42,13 @@ export class ProjectDetailsComponent implements OnInit {
   }
 
   private loadProject(id: string) {
-    // First try from cache
+    // Show cached project immediately while fetching fresh data
     const cachedProject = this.projectService.getProjectById(id);
     if (cachedProject) {
       this.project.set(cachedProject);
-      this.loading.set(false);
-      // Record view
-      this.projectService.recordView(id).subscribe();
-      return;
     }
 
-    // Fetch from API
+    // Always fetch fresh data from API
     this.projectService.getProjectByIdFromApi(id).subscribe({
       next: (response) => {
         if (response.data) {
@@ -68,8 +64,14 @@ export class ProjectDetailsComponent implements OnInit {
       error: (err) => {
         if (err.status === 404) {
           this.notFound.set(true);
+          this.loading.set(false);
+        } else if (cachedProject) {
+          // Use cached data if API fails
+          this.loading.set(false);
+          this.projectService.recordView(id).subscribe();
+        } else {
+          this.loading.set(false);
         }
-        this.loading.set(false);
       }
     });
   }

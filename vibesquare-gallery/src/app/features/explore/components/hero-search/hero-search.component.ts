@@ -36,7 +36,7 @@ export class HeroSearchComponent implements OnInit, OnDestroy {
     { text: 'Prompt', color: '#17ffdc' },
     { text: 'Code', color: '#f472b6' },
     { text: 'Design', color: '#a78bfa' },
-    { text: 'Functions', color: '#fbbf24' }
+    { text: 'Visual Identity', color: '#fbbf24' }
   ];
   currentWordIndex = signal<number>(0);
   isAnimating = signal<boolean>(false);

@@ -12,7 +12,7 @@ export interface SafeGalleryUser {
     };
     isActive: boolean;
     emailVerified: boolean;
-    subscriptionTier: 'free' | 'premium';
+    subscriptionTier: 'free' | 'pro';
     lastDownloadAt?: Date;
     canDownload: boolean;
     hasPanelAccess: boolean;
