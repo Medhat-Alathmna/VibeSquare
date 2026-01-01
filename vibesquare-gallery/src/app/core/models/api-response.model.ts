@@ -42,6 +42,7 @@ export interface BuilderSocialLinks {
 export interface ProjectWithBuilder extends Project {
   builder?: Builder;
   builderSocialLinks?: BuilderSocialLinks;
+  hasUserLiked?: boolean; // Whether the current user has liked this project
 }
 
 // Query parameters for projects list

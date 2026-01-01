@@ -78,12 +78,6 @@ export class ProjectService {
         if (response.data) {
           this.allProjectsSignal.set(response.data.projects);
           this.paginationSignal.set(response.data.pagination);
-
-          // Check favorites if authenticated
-          if (this.authService.isAuthenticated() && response.data.projects.length > 0) {
-            const ids = response.data.projects.map(p => p.id);
-            this.checkMultipleFavorites(ids).subscribe();
-          }
         }
         this.loadingSignal.set(false);
       }),
@@ -111,12 +105,6 @@ export class ProjectService {
         if (response.data) {
           this.allProjectsSignal.set(response.data.projects);
           this.paginationSignal.set(response.data.pagination);
-
-          // Check favorites if authenticated
-          if (this.authService.isAuthenticated() && response.data.projects.length > 0) {
-            const ids = response.data.projects.map(p => p.id);
-            this.checkMultipleFavorites(ids).subscribe();
-          }
         }
         this.loadingSignal.set(false);
       }),
@@ -224,12 +212,6 @@ export class ProjectService {
           // Append projects
           this.allProjectsSignal.update(current => [...current, ...response.data.projects]);
           this.paginationSignal.set(response.data.pagination);
-
-          // Check favorites for new projects
-          if (this.authService.isAuthenticated() && response.data.projects.length > 0) {
-            const ids = response.data.projects.map(p => p.id);
-            this.checkMultipleFavorites(ids).subscribe();
-          }
         }
         this.loadingSignal.set(false);
       }),
@@ -320,56 +302,7 @@ export class ProjectService {
     this.getProjects({ page: 1, limit: 12 }).subscribe();
   }
 
-  // ============ Favorites Logic ============
-
-  addToFavorites(projectId: string): Observable<any> {
-    return this.apiService.post<any>(`gallery/favorites/${projectId}`, {}).pipe(
-      tap(() => this.updateProjectFavoriteStatus(projectId, true))
-    );
-  }
-
-  removeFromFavorites(projectId: string): Observable<any> {
-    return this.apiService.delete<any>(`gallery/favorites/${projectId}`).pipe(
-      tap(() => this.updateProjectFavoriteStatus(projectId, false))
-    );
-  }
-
-  checkFavoriteStatus(projectId: string): Observable<any> {
-    return this.apiService.get<any>(`gallery/favorites/check/${projectId}`).pipe(
-      tap((res: any) => {
-        if (res.success) {
-          this.updateProjectFavoriteStatus(projectId, res.data.isFavorited);
-        }
-      })
-    );
-  }
-
-  checkMultipleFavorites(projectIds: string[]): Observable<any> {
-    return this.apiService.post<any>('gallery/favorites/check-multiple', { projectIds }).pipe(
-      tap((res: any) => {
-        if (res.success && res.data) {
-          const updates = res.data;
-          this.allProjectsSignal.update(projects =>
-            projects.map(p => ({
-              ...p,
-              isFavorited: updates[p.id] || false
-            }))
-          );
-        }
-      }),
-      catchError(() => of(null))
-    );
-  }
-
   // ============ Private Helpers ============
-
-  private updateProjectFavoriteStatus(projectId: string, isFavorited: boolean) {
-    this.allProjectsSignal.update(projects =>
-      projects.map(p =>
-        p.id === projectId ? { ...p, isFavorited } : p
-      )
-    );
-  }
 
   private updateProjectStat(projectId: string, stat: 'views' | 'likes' | 'downloads', newCount: number): void {
     this.allProjectsSignal.update(projects =>

@@ -2,7 +2,7 @@
 // Based on API: /api/gallery/users
 
 // Profile Tab Type
-export type ProfileTab = 'overview' | 'favorites' | 'analyses' | 'activity' | 'settings';
+export type ProfileTab = 'overview' | 'analyses' | 'activity' | 'settings';
 
 // ============================================
 // User Stats (GET /api/gallery/users/me/stats)

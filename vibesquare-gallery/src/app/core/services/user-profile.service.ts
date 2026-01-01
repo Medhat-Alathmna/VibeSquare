@@ -10,10 +10,7 @@ import {
   ActivityLogData,
   UserAnalysisItem,
   UserAnalysesResponse,
-  UserAnalysesData,
-  FavoriteProject,
-  FavoritesResponse,
-  FavoritesData
+  UserAnalysesData
 } from '../models/user-profile.model';
 
 @Injectable({
@@ -58,19 +55,6 @@ export class UserProfileService {
   readonly activityData = this.activityDataSignal.asReadonly();
   readonly activityLoading = this.activityLoadingSignal.asReadonly();
   readonly activityError = this.activityErrorSignal.asReadonly();
-
-  // ============================================
-  // Favorites State
-  // ============================================
-  private favoritesSignal = signal<FavoriteProject[]>([]);
-  private favoritesDataSignal = signal<FavoritesData | null>(null);
-  private favoritesLoadingSignal = signal<boolean>(false);
-  private favoritesErrorSignal = signal<string | null>(null);
-
-  readonly favorites = this.favoritesSignal.asReadonly();
-  readonly favoritesData = this.favoritesDataSignal.asReadonly();
-  readonly favoritesLoading = this.favoritesLoadingSignal.asReadonly();
-  readonly favoritesError = this.favoritesErrorSignal.asReadonly();
 
   // ============================================
   // API Methods
@@ -149,31 +133,6 @@ export class UserProfileService {
   }
 
   /**
-   * GET /api/gallery/favorites - Fetch user's favorited projects
-   */
-  getFavorites(page = 1, limit = 12): Observable<FavoritesResponse> {
-    this.favoritesLoadingSignal.set(true);
-    this.favoritesErrorSignal.set(null);
-
-    return this.apiService.get<FavoritesResponse>('gallery/favorites', {
-      params: { page: page.toString(), limit: limit.toString() }
-    }).pipe(
-      tap(response => {
-        if (response.success) {
-          this.favoritesSignal.set(response.data.data);
-          this.favoritesDataSignal.set(response.data);
-        }
-        this.favoritesLoadingSignal.set(false);
-      }),
-      catchError((error: HttpErrorResponse) => {
-        this.favoritesLoadingSignal.set(false);
-        this.favoritesErrorSignal.set(this.extractErrorMessage(error));
-        return throwError(() => error);
-      })
-    );
-  }
-
-  /**
    * Clear all profile state (call on logout)
    */
   clearProfileState(): void {
@@ -187,17 +146,6 @@ export class UserProfileService {
     this.activitySignal.set([]);
     this.activityDataSignal.set(null);
     this.activityErrorSignal.set(null);
-
-    this.favoritesSignal.set([]);
-    this.favoritesDataSignal.set(null);
-    this.favoritesErrorSignal.set(null);
-  }
-
-  /**
-   * Refresh favorites after unfavorite action
-   */
-  refreshFavorites(currentPage = 1): void {
-    this.getFavorites(currentPage).subscribe();
   }
 
   private extractErrorMessage(error: HttpErrorResponse): string {

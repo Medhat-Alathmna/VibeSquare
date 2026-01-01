@@ -1,6 +1,6 @@
-import { Component, Input, signal } from '@angular/core';
+import { Component, Input, signal, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Project } from '../../../../core/models/project.model';
+import { ProjectWithBuilder } from '../../../../core/models/api-response.model';
 import { ButtonComponent } from '../../../../shared/components/button/button.component';
 import { ClipboardService } from '../../../../core/services/clipboard.service';
 import { DownloadService } from '../../../../core/services/download.service';
@@ -16,8 +16,8 @@ import { ToastService } from '../../../../core/services/toast.service';
   templateUrl: './project-hero.component.html',
   styleUrls: ['./project-hero.component.css']
 })
-export class ProjectHeroComponent {
-  @Input() project!: Project;
+export class ProjectHeroComponent implements OnInit {
+  @Input() project!: ProjectWithBuilder;
 
   isLiking = signal(false);
   hasLiked = signal(false);
@@ -31,8 +31,33 @@ export class ProjectHeroComponent {
     private toastService: ToastService
   ) { }
 
+  ngOnInit() {
+    // Initialize hasLiked from project data
+    if (this.project.hasUserLiked) {
+      this.hasLiked.set(true);
+    }
+  }
+
   async copyPrompt() {
     await this.clipboardService.copyToClipboard(this.project.prompt.text);
+  }
+
+  downloadSourceCode() {
+    if (!this.project.sourceCodeFile) return;
+
+    if (!this.authService.isAuthenticated()) {
+      this.router.navigate(['/auth/login'], { queryParams: { returnUrl: this.router.url } });
+      return;
+    }
+
+    // Download source code file
+    this.downloadService.downloadProject(
+      this.project.sourceCodeFile,
+      `${this.project.title}-source-code.zip`
+    );
+
+    // Record download
+    this.projectService.recordDownload(this.project.id).subscribe();
   }
 
   downloadProject() {
@@ -67,19 +92,6 @@ export class ProjectHeroComponent {
     });
   }
 
-  toggleFavorite() {
-    if (!this.authService.isAuthenticated()) {
-      this.router.navigate(['/auth/login'], { queryParams: { returnUrl: this.router.url } });
-      return;
-    }
-
-    if (this.project.isFavorited) {
-      this.projectService.removeFromFavorites(this.project.id).subscribe();
-    } else {
-      this.projectService.addToFavorites(this.project.id).subscribe();
-    }
-  }
-
   openDemo() {
     if (this.project.demoUrl) {
       window.open(this.project.demoUrl, '_blank');
@@ -92,13 +104,20 @@ export class ProjectHeroComponent {
       return;
     }
 
-    if (this.isLiking() || this.hasLiked()) return;
+    // Prevent multiple likes
+    if (this.isLiking() || this.hasLiked()) {
+      if (this.hasLiked()) {
+        this.toastService.info('You already liked this project');
+      }
+      return;
+    }
 
     this.isLiking.set(true);
     this.projectService.recordLike(this.project.id).subscribe({
       next: (response) => {
         this.isLiking.set(false);
         this.hasLiked.set(true);
+        this.project.hasUserLiked = true;
         if (response.data?.likes !== undefined) {
           this.project.likes = response.data.likes;
         }
@@ -108,6 +127,7 @@ export class ProjectHeroComponent {
         this.isLiking.set(false);
         if (err.status === 400) {
           this.hasLiked.set(true);
+          this.project.hasUserLiked = true;
           this.toastService.info('You already liked this project');
         } else {
           this.toastService.error('Failed to like project');

@@ -71,19 +71,20 @@
 .rotating-word {
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   display: inline-block;
-  width: 320px;
+  min-width: 260px;
   text-align: left;
+  white-space: nowrap;
 }
 
 @media (min-width: 768px) {
   .rotating-word {
-    width: 280px;
+    width: 400px;
   }
 }
 
 @media (min-width: 1024px) {
   .rotating-word {
-    width: 340px;
+    width: 500px;
   }
 }
 

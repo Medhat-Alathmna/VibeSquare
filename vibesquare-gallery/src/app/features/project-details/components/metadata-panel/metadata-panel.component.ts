@@ -1,6 +1,6 @@
 import { Component, Input } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { Project } from '../../../../core/models/project.model';
+import { ProjectWithBuilder } from '../../../../core/models/api-response.model';
 import { TagChipComponent } from '../../../../shared/components/tag-chip/tag-chip.component';
 
 @Component({
@@ -11,7 +11,7 @@ import { TagChipComponent } from '../../../../shared/components/tag-chip/tag-chi
   styleUrls: ['./metadata-panel.component.css']
 })
 export class MetadataPanelComponent {
-  @Input() project!: Project;
+  @Input() project!: ProjectWithBuilder;
 
   formatDate(date: Date | string): string {
     return new Date(date).toLocaleDateString('en-US', {
@@ -19,5 +19,11 @@ export class MetadataPanelComponent {
       month: 'long',
       day: 'numeric'
     });
+  }
+
+  openSocialLink(url?: string) {
+    if (url) {
+      window.open(url, '_blank');
+    }
   }
 }

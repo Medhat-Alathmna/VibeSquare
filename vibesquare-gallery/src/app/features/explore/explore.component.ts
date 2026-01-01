@@ -71,10 +71,16 @@ export class ExploreComponent implements OnInit {
       });
       return;
     }
-    
+
+    // Show loading toast
+    const loadingToastId = this.toastService.loading('Estimating analysis cost...');
+
     // Start analysis estimation
     this.analysisService.estimateAnalysis(event.url).subscribe({
       next: (response) => {
+        // Dismiss loading toast
+        this.toastService.dismiss(loadingToastId);
+
         if (response.success) {
           this.showConfirmationModal(response.data, event.url);
         } else {
@@ -82,6 +88,9 @@ export class ExploreComponent implements OnInit {
         }
       },
       error: (error) => {
+        // Dismiss loading toast
+        this.toastService.dismiss(loadingToastId);
+
         if (error.status === 402) {
           this.showQuotaExceededModal();
         } else {

@@ -17,22 +17,7 @@
 @if (stats() && !isLoading()) {
   <div class="space-y-6">
     <!-- Stats Cards Grid -->
-    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-      <!-- Total Favorites -->
-      <div class="bg-[#161616] rounded-xl p-5 border border-gray-800 hover:border-gray-700 transition-colors">
-        <div class="flex items-center gap-3 mb-3">
-          <div class="w-10 h-10 rounded-lg bg-pink-500/10 flex items-center justify-center">
-            <svg class="w-5 h-5 text-pink-400" fill="currentColor" viewBox="0 0 24 24">
-              <path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"></path>
-            </svg>
-          </div>
-          <div>
-            <p class="text-sm text-gray-400">Favorites</p>
-            <p class="text-2xl font-bold text-white">{{ formatNumber(stats()?.totalFavorites) }}</p>
-          </div>
-        </div>
-      </div>
-
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
       <!-- Total Analyses -->
       <div class="bg-[#161616] rounded-xl p-5 border border-gray-800 hover:border-gray-700 transition-colors">
         <div class="flex items-center gap-3 mb-3">

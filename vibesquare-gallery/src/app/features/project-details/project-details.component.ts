@@ -5,7 +5,6 @@ import { ProjectService } from '../../core/services/project.service';
 import { Project } from '../../core/models/project.model';
 import { ProjectHeroComponent } from './components/project-hero/project-hero.component';
 import { PromptViewerComponent } from './components/prompt-viewer/prompt-viewer.component';
-import { CodeTabsComponent } from './components/code-tabs/code-tabs.component';
 import { MetadataPanelComponent } from './components/metadata-panel/metadata-panel.component';
 
 @Component({
@@ -16,7 +15,6 @@ import { MetadataPanelComponent } from './components/metadata-panel/metadata-pan
     RouterModule,
     ProjectHeroComponent,
     PromptViewerComponent,
-    CodeTabsComponent,
     MetadataPanelComponent
   ],
   templateUrl: './project-details.component.html',

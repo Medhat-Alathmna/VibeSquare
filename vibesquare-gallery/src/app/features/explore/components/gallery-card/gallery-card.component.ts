@@ -26,22 +26,6 @@ export class GalleryCardComponent {
     this.modalService.open(this.project());
   }
 
-  toggleFavorite(event: Event): void {
-    event.stopPropagation();
-
-    if (!this.authService.isAuthenticated()) {
-      this.router.navigate(['/auth/login'], { queryParams: { returnUrl: this.router.url } });
-      return;
-    }
-
-    const p = this.project();
-    if (p.isFavorited) {
-      this.projectService.removeFromFavorites(p.id).subscribe();
-    } else {
-      this.projectService.addToFavorites(p.id).subscribe();
-    }
-  }
-
   formatNumber(num: number): string {
     if (num >= 1000) {
       return (num / 1000).toFixed(1) + 'k';

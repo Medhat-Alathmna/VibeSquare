@@ -45,15 +45,14 @@
       <div class="w-px bg-dark-border my-3"></div>
 
       <!-- LLM Dropdown -->
-      <app-llm-dropdown [selectedValue]="selectedLlm()" (selectionChange)="onLlmChange($event)">
-      </app-llm-dropdown>
+
 
       <!-- Analyze Button -->
-      <button (click)="onAnalyze()" [disabled]="!isValidUrl() || isLoading()" class="analyze-btn flex items-center gap-2 px-6 py-4 m-2
+      <button (click)="onAnalyze()" [disabled]="isDisabled()" class="analyze-btn flex items-center gap-2 px-6 py-4 m-2
                bg-secondary text-primary font-semibold rounded-xl
                hover:bg-secondary/90 disabled:opacity-50 disabled:cursor-not-allowed
                transition-all duration-200">
-        @if (isLoading()) {
+        @if (isLoading() || externalLoading()) {
         <svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24">
           <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
           <path class="opacity-75" fill="currentColor"

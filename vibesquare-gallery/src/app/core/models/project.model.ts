@@ -7,6 +7,7 @@ export interface Project {
   screenshots: string[];
   demoUrl?: string;
   downloadUrl?: string;
+  sourceCodeFile?: string; // URL to compressed source code file
 
   // Prompt information
   prompt: Prompt;
@@ -28,12 +29,6 @@ export interface Project {
 
   // Collections this project belongs to
   collectionIds: string[];
-
-  // Code files
-  codeFiles?: CodeFile[];
-
-  // User specific
-  isFavorited?: boolean;
 }
 
 export interface Prompt {
@@ -41,13 +36,6 @@ export interface Prompt {
   model: string; // e.g., "Claude Sonnet 4.5"
   version?: string;
   parameters?: Record<string, any>;
-}
-
-export interface CodeFile {
-  filename: string;
-  language: string;
-  content: string;
-  path?: string;
 }
 
 export type Framework =
