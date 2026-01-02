@@ -17,14 +17,14 @@ import { RouterModule } from '@angular/router';
               <div class="w-8 h-8 bg-secondary rounded-lg flex items-center justify-center">
                 <span class="text-black font-bold text-xl">V</span>
               </div>
-              <span class="text-xl font-display font-bold text-white">VibeSquare</span>
+              <span class="text-xl font-display font-bold text-white">Vibe Square</span>
             </div>
             <p class="text-gray-400 text-sm mb-4 max-w-md">
               Discover stunning AI-generated web projects created with VibeCode.
               Browse, explore, and download inspiring designs.
             </p>
             <div class="text-xs text-gray-500">
-              © 2025 VibeSquare Gallery. All rights reserved.
+              © 2026 Vibe Square. All rights reserved.
             </div>
           </div>
 
@@ -35,6 +35,8 @@ import { RouterModule } from '@angular/router';
               <li><a routerLink="/explore" class="text-gray-400 hover:text-secondary transition-colors">Explore</a></li>
               <li><a routerLink="/collections" class="text-gray-400 hover:text-secondary transition-colors">Collections</a></li>
               <li><a routerLink="/about" class="text-gray-400 hover:text-secondary transition-colors">About</a></li>
+              <li><a routerLink="/privacy" class="text-gray-400 hover:text-secondary transition-colors">Privacy Policy</a></li>
+              <li><a routerLink="/terms" class="text-gray-400 hover:text-secondary transition-colors">Terms of Service</a></li>
             </ul>
           </div>
 

@@ -43,34 +43,85 @@ export class OAuthCallbackComponent implements OnInit {
     errorMessage = '';
 
     ngOnInit() {
+        console.log('[OAuth Callback] Component initialized');
+
         const token = this.route.snapshot.queryParamMap.get('token');
         const error = this.route.snapshot.queryParamMap.get('error');
         const errorDescription = this.route.snapshot.queryParamMap.get('error_description');
 
+        console.log('[OAuth Callback] Query params:', { token: token ? 'present' : 'missing', error, errorDescription });
+
+        // Check if opened in popup (has opener window)
+        const isPopup = window.opener && !window.opener.closed;
+        console.log('[OAuth Callback] Is popup:', isPopup);
+
         if (error) {
+            console.error('[OAuth Callback] Error from backend:', error, errorDescription);
             this.isLoading = false;
             this.errorMessage = errorDescription || error || 'Authentication failed. Please try again.';
+
+            // If popup, send error to parent
+            if (isPopup) {
+                console.log('[OAuth Callback] Sending error to parent window...');
+                window.opener.postMessage({
+                    type: 'OAUTH_ERROR',
+                    error: this.errorMessage
+                }, window.location.origin);
+                console.log('[OAuth Callback] Error sent, closing in 2 seconds...');
+                setTimeout(() => window.close(), 2000);
+            }
             return;
         }
 
         if (!token) {
+            console.error('[OAuth Callback] No token received from backend');
             this.isLoading = false;
             this.errorMessage = 'No authentication token received. Please try again.';
+
+            // If popup, send error to parent
+            if (isPopup) {
+                console.log('[OAuth Callback] Sending no-token error to parent window...');
+                window.opener.postMessage({
+                    type: 'OAUTH_ERROR',
+                    error: this.errorMessage
+                }, window.location.origin);
+                console.log('[OAuth Callback] Error sent, closing in 2 seconds...');
+                setTimeout(() => window.close(), 2000);
+            }
             return;
         }
 
-        this.authService.handleOAuthCallback(token).pipe(
-            catchError(err => {
-                this.isLoading = false;
-                this.errorMessage = err.error?.message || 'Failed to complete authentication. Please try again.';
-                return throwError(() => err);
-            })
-        ).subscribe({
-            next: () => {
-                this.isLoading = false;
-                const returnUrl = this.authService.getOAuthReturnUrl();
-                this.router.navigateByUrl(returnUrl);
-            }
-        });
+        // If opened in popup, send token to parent window
+        if (isPopup) {
+            console.log('[OAuth Callback] Sending success message to parent window...');
+            window.opener.postMessage({
+                type: 'OAUTH_SUCCESS',
+                token: token
+            }, window.location.origin);
+            console.log('[OAuth Callback] Success message sent');
+
+            // Close popup after short delay (1 second for safety)
+            this.isLoading = false;
+            console.log('[OAuth Callback] Popup will close in 1 second...');
+            setTimeout(() => {
+                console.log('[OAuth Callback] Closing popup now');
+                window.close();
+            }, 1000);
+        } else {
+            // Fallback: if not in popup, handle normally
+            this.authService.handleOAuthCallback(token).pipe(
+                catchError(err => {
+                    this.isLoading = false;
+                    this.errorMessage = err.error?.message || 'Failed to complete authentication. Please try again.';
+                    return throwError(() => err);
+                })
+            ).subscribe({
+                next: () => {
+                    this.isLoading = false;
+                    const returnUrl = this.authService.getOAuthReturnUrl();
+                    this.router.navigateByUrl(returnUrl);
+                }
+            });
+        }
     }
 }

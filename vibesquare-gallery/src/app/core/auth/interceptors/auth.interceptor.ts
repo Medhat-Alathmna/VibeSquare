@@ -22,6 +22,11 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
     const authService = inject(AuthService);
     const router = inject(Router);
 
+    // Always include credentials for cookies (refresh token)
+    req = req.clone({
+        withCredentials: true
+    });
+
     // Skip adding token for refresh endpoint to prevent infinite loops
     if (req.url.includes('/auth/refresh')) {
         return next(req);
@@ -32,7 +37,8 @@ export const authInterceptor: HttpInterceptorFn = (req, next) => {
         req = req.clone({
             setHeaders: {
                 Authorization: `Bearer ${token}`
-            }
+            },
+            withCredentials: true
         });
     }
 

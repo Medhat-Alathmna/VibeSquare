@@ -1,8 +1,9 @@
 import { Injectable, signal } from '@angular/core';
+import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, tap, catchError, of, throwError } from 'rxjs';
 import { LoginPayload, RegisterPayload, AuthResponse, SafeGalleryUser, RefreshTokenResponse, VerifyEmailPayload, OAuthProvider } from '../models/auth.models';
 import { ApiService } from '../../api.service';
-import { environment } from '../../../../environments/environment';
+import { environment } from '../../../../environments/environment.production';
 
 @Injectable({
     providedIn: 'root'
@@ -15,7 +16,10 @@ export class AuthService {
     currentUser = signal<SafeGalleryUser | null>(null);
     isAuthenticated = signal<boolean>(false);
 
-    constructor(private apiService: ApiService) {
+    constructor(
+        private apiService: ApiService,
+        private router: Router
+    ) {
         this.loadSession();
     }
 
@@ -106,18 +110,27 @@ export class AuthService {
 
     // Fetch current user helper
     getCurrentUser(): Observable<any> {
+        console.log('[Auth] Fetching current user from /gallery/auth/me...');
         return this.apiService.get<any>('gallery/auth/me').pipe(
             tap(response => {
+                console.log('[Auth] User data response:', response);
                 if (response.success) {
+                    console.log('[Auth] User authenticated successfully:', response.data.username);
                     this.currentUser.set(response.data);
                     this.isAuthenticated.set(true);
                     // Update cached user data
                     localStorage.setItem(this.userKey, JSON.stringify(response.data));
+                } else {
+                    console.warn('[Auth] User fetch response not successful:', response);
                 }
             }),
             catchError(err => {
+                console.error('[Auth] Failed to fetch current user:', err);
+                console.error('[Auth] Error status:', err.status);
+                console.error('[Auth] Error message:', err.message);
                 // Only clear session on 401 (unauthorized)
                 if (err.status === 401) {
+                    console.warn('[Auth] Unauthorized (401), clearing session');
                     this.clearSession();
                 }
                 return throwError(() => err);
@@ -137,20 +150,113 @@ export class AuthService {
 
     // OAuth Methods
     initiateOAuthLogin(provider: OAuthProvider): void {
+        console.log('[OAuth] Initiating OAuth login with provider:', provider);
+
         const returnUrl = window.location.pathname !== '/auth/login'
             && window.location.pathname !== '/auth/register'
             ? window.location.pathname
             : '/explore';
         localStorage.setItem('oauth_return_url', returnUrl);
-        // Constructed to match previous logic: .../auth/{provider}
-        // Previously: this.apiUrl.replace('/gallery', '') which was .../auth
-        const authUrl = `${environment.apiUrl}/auth`;
-        window.location.href = `${authUrl}/${provider}`;
+        console.log('[OAuth] Return URL saved:', returnUrl);
+
+        // OAuth URL
+        const authUrl = `${environment.apiUrl}/gallery/auth`;
+        const oauthUrl = `${authUrl}/${provider}`;
+        console.log('[OAuth] OAuth URL:', oauthUrl);
+
+        // Open OAuth in popup window
+        const width = 500;
+        const height = 600;
+        const left = (window.innerWidth - width) / 2 + window.screenX;
+        const top = (window.innerHeight - height) / 2 + window.screenY;
+
+        console.log('[OAuth] Opening popup window...');
+        const popup = window.open(
+            oauthUrl,
+            'OAuth Login',
+            `width=${width},height=${height},left=${left},top=${top},popup=yes,toolbar=no,menubar=no,location=no,status=no`
+        );
+
+        if (!popup) {
+            // Fallback to redirect if popup blocked
+            console.warn('[OAuth] Popup blocked, falling back to redirect');
+            window.location.href = oauthUrl;
+            return;
+        }
+
+        console.log('[OAuth] Popup opened successfully');
+
+        // Listen for message from popup
+        const messageHandler = (event: MessageEvent) => {
+            console.log('[OAuth] Message received:', event.data);
+
+            // Verify origin for security
+            if (event.origin !== window.location.origin) {
+                console.warn('[OAuth] Message from invalid origin:', event.origin);
+                return;
+            }
+
+            if (event.data.type === 'OAUTH_SUCCESS' && event.data.token) {
+                console.log('[OAuth] Success! Processing token...');
+
+                // Handle successful OAuth
+                this.handleOAuthCallback(event.data.token).subscribe({
+                    next: () => {
+                        console.log('[OAuth] User data fetched successfully');
+                        const url = this.getOAuthReturnUrl();
+                        console.log('[OAuth] Navigating to:', url);
+
+                        // Use Angular Router for smooth navigation (no page reload)
+                        this.router.navigateByUrl(url).then(() => {
+                            console.log('[OAuth] Navigation completed successfully');
+                        });
+                    },
+                    error: (err) => {
+                        console.error('[OAuth] Failed to fetch user data:', err);
+                        console.error('[OAuth] Error details:', {
+                            status: err.status,
+                            message: err.message,
+                            error: err.error
+                        });
+                        // Fallback navigation even on error
+                        this.router.navigateByUrl('/auth/login?error=oauth_failed');
+                    }
+                });
+
+                // Close popup and remove listener
+                console.log('[OAuth] Closing popup...');
+                if (popup && !popup.closed) {
+                    popup.close();
+                    console.log('[OAuth] Popup closed');
+                }
+                window.removeEventListener('message', messageHandler);
+            } else if (event.data.type === 'OAUTH_ERROR') {
+                console.error('[OAuth] Error received from popup:', event.data.error);
+                if (popup && !popup.closed) {
+                    popup.close();
+                }
+                window.removeEventListener('message', messageHandler);
+                // Show error to user
+                this.router.navigateByUrl('/auth/login?error=' + encodeURIComponent(event.data.error));
+            }
+        };
+
+        window.addEventListener('message', messageHandler);
+
+        // Check if popup was closed without completing OAuth
+        const checkClosed = setInterval(() => {
+            if (popup.closed) {
+                clearInterval(checkClosed);
+                window.removeEventListener('message', messageHandler);
+            }
+        }, 500);
     }
 
     handleOAuthCallback(token: string): Observable<any> {
+        console.log('[OAuth] Handling OAuth callback, storing token...');
         localStorage.setItem(this.accessTokenKey, token);
         this.isAuthenticated.set(true);
+        console.log('[OAuth] Fetching current user data...');
         return this.getCurrentUser();
     }
 
