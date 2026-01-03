@@ -48,50 +48,76 @@ export class OAuthCallbackComponent implements OnInit {
         const token = this.route.snapshot.queryParamMap.get('token');
         const error = this.route.snapshot.queryParamMap.get('error');
         const errorDescription = this.route.snapshot.queryParamMap.get('error_description');
+        const status = this.route.snapshot.queryParamMap.get('status');
+        const message = this.route.snapshot.queryParamMap.get('message');
 
-        console.log('[OAuth Callback] Query params:', { token: token ? 'present' : 'missing', error, errorDescription });
+        console.log('[OAuth Callback] Query params:', { token: token ? 'present' : 'missing', error, errorDescription, status, message });
 
         // Check if opened in popup (has opener window)
         const isPopup = window.opener && !window.opener.closed;
         console.log('[OAuth Callback] Is popup:', isPopup);
 
-        if (error) {
-            console.error('[OAuth Callback] Error from backend:', error, errorDescription);
-            this.isLoading = false;
-            this.errorMessage = errorDescription || error || 'Authentication failed. Please try again.';
+        // Handle 409 Conflict (email already exists)
+        if (status === '409') {
+            this.handleConflict(message || 'Email already exists', isPopup);
+            return;
+        }
 
-            // If popup, send error to parent
-            if (isPopup) {
-                console.log('[OAuth Callback] Sending error to parent window...');
-                window.opener.postMessage({
-                    type: 'OAUTH_ERROR',
-                    error: this.errorMessage
-                }, window.location.origin);
-                console.log('[OAuth Callback] Error sent, closing in 2 seconds...');
-                setTimeout(() => window.close(), 2000);
-            }
+        if (error) {
+            this.handleError(errorDescription || error || 'Authentication failed. Please try again.', isPopup);
             return;
         }
 
         if (!token) {
-            console.error('[OAuth Callback] No token received from backend');
-            this.isLoading = false;
-            this.errorMessage = 'No authentication token received. Please try again.';
-
-            // If popup, send error to parent
-            if (isPopup) {
-                console.log('[OAuth Callback] Sending no-token error to parent window...');
-                window.opener.postMessage({
-                    type: 'OAUTH_ERROR',
-                    error: this.errorMessage
-                }, window.location.origin);
-                console.log('[OAuth Callback] Error sent, closing in 2 seconds...');
-                setTimeout(() => window.close(), 2000);
-            }
+            this.handleError('No authentication token received. Please try again.', isPopup);
             return;
         }
 
-        // If opened in popup, send token to parent window
+        // Handle success
+        this.handleSuccess(token, isPopup);
+    }
+
+    private handleConflict(message: string, isPopup: boolean): void {
+        console.log('[OAuth Callback] Email conflict detected');
+        this.isLoading = false;
+
+        if (isPopup) {
+            console.log('[OAuth Callback] Sending conflict message to parent window...');
+            window.opener.postMessage({
+                type: 'OAUTH_EMAIL_CONFLICT',
+                message: message
+            }, window.location.origin);
+            console.log('[OAuth Callback] Conflict message sent, closing in 1 second...');
+            setTimeout(() => window.close(), 1000);
+        } else {
+            this.errorMessage = message;
+            setTimeout(() => {
+                this.router.navigate(['/auth/login'], {
+                    queryParams: { conflict: 'email_exists' }
+                });
+            }, 2000);
+        }
+    }
+
+    private handleError(errorMsg: string, isPopup: boolean): void {
+        console.error('[OAuth Callback] Error:', errorMsg);
+        this.isLoading = false;
+        this.errorMessage = errorMsg;
+
+        if (isPopup) {
+            console.log('[OAuth Callback] Sending error to parent window...');
+            window.opener.postMessage({
+                type: 'OAUTH_ERROR',
+                error: this.errorMessage
+            }, window.location.origin);
+            console.log('[OAuth Callback] Error sent, closing in 2 seconds...');
+            setTimeout(() => window.close(), 2000);
+        }
+    }
+
+    private handleSuccess(token: string, isPopup: boolean): void {
+        console.log('[OAuth Callback] Success! Token received');
+
         if (isPopup) {
             console.log('[OAuth Callback] Sending success message to parent window...');
             window.opener.postMessage({
@@ -100,7 +126,6 @@ export class OAuthCallbackComponent implements OnInit {
             }, window.location.origin);
             console.log('[OAuth Callback] Success message sent');
 
-            // Close popup after short delay (1 second for safety)
             this.isLoading = false;
             console.log('[OAuth Callback] Popup will close in 1 second...');
             setTimeout(() => {

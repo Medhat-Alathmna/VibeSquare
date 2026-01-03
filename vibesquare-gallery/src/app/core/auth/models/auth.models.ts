@@ -18,6 +18,7 @@ export interface SafeGalleryUser {
     hasPanelAccess: boolean;
     createdAt: Date;
     lastLoginAt?: Date;
+    googleId?: string;
 }
 
 export interface AuthResponse {
@@ -26,6 +27,7 @@ export interface AuthResponse {
     data: {
         user: SafeGalleryUser |any;
         accessToken: string;
+        isNewUser?: boolean;
     } | null;
 }
 
@@ -53,3 +55,14 @@ export interface RefreshTokenResponse {
 }
 
 export type OAuthProvider = 'google' | 'github';
+
+export interface OAuthConflictData {
+    status: 409;
+    message: string;
+    email?: string;
+}
+
+export interface OAuthErrorData {
+    error: string;
+    error_description?: string;
+}

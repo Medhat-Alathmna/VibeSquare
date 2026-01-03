@@ -21,4 +21,8 @@ export class UserService {
     deleteAccount(): Observable<any> {
         return this.apiService.delete('gallery/users/me');
     }
+
+    unlinkProvider(provider: 'google' | 'github'): Observable<any> {
+        return this.apiService.delete(`gallery/auth/unlink/${provider}`);
+    }
 }
