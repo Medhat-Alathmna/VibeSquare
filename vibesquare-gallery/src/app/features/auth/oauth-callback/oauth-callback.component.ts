@@ -87,8 +87,9 @@ export class OAuthCallbackComponent implements OnInit {
                 type: 'OAUTH_EMAIL_CONFLICT',
                 message: message
             }, window.location.origin);
-            console.log('[OAuth Callback] Conflict message sent, closing in 1 second...');
-            setTimeout(() => window.close(), 1000);
+            console.log('[OAuth Callback] Conflict message sent, closing popup...');
+            // Close immediately - parent will show the dialog
+            setTimeout(() => window.close(), 100);
         } else {
             this.errorMessage = message;
             setTimeout(() => {
@@ -110,8 +111,9 @@ export class OAuthCallbackComponent implements OnInit {
                 type: 'OAUTH_ERROR',
                 error: this.errorMessage
             }, window.location.origin);
-            console.log('[OAuth Callback] Error sent, closing in 2 seconds...');
-            setTimeout(() => window.close(), 2000);
+            console.log('[OAuth Callback] Error sent, closing popup...');
+            // Close immediately - parent will show the error toast
+            setTimeout(() => window.close(), 100);
         }
     }
 
@@ -124,14 +126,14 @@ export class OAuthCallbackComponent implements OnInit {
                 type: 'OAUTH_SUCCESS',
                 token: token
             }, window.location.origin);
-            console.log('[OAuth Callback] Success message sent');
+            console.log('[OAuth Callback] Success message sent, closing popup...');
 
             this.isLoading = false;
-            console.log('[OAuth Callback] Popup will close in 1 second...');
+            // Close immediately - parent will show welcome message
             setTimeout(() => {
                 console.log('[OAuth Callback] Closing popup now');
                 window.close();
-            }, 1000);
+            }, 100);
         } else {
             // Fallback: if not in popup, handle normally
             this.authService.handleOAuthCallback(token).pipe(

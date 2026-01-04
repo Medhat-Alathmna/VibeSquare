@@ -1,13 +1,12 @@
 import { Injectable, signal, inject } from '@angular/core';
 import { Router } from '@angular/router';
 import { BehaviorSubject, Observable, tap, catchError, of, throwError } from 'rxjs';
-import { Overlay, OverlayConfig } from '@angular/cdk/overlay';
-import { ComponentPortal } from '@angular/cdk/portal';
+
 import { LoginPayload, RegisterPayload, AuthResponse, SafeGalleryUser, RefreshTokenResponse, VerifyEmailPayload, OAuthProvider } from '../models/auth.models';
 import { ApiService } from '../../api.service';
 import { environment } from '../../../../environments/environment';
 import { ToastService } from '../../services/toast.service';
-import { EmailConflictDialogComponent } from '../../../shared/components/email-conflict-dialog/email-conflict-dialog.component';
+
 
 @Injectable({
     providedIn: 'root'
@@ -22,7 +21,7 @@ export class AuthService {
 
     // Inject services
     private toastService = inject(ToastService);
-    private overlay = inject(Overlay);
+
 
     constructor(
         private apiService: ApiService,
@@ -170,66 +169,10 @@ export class AuthService {
         // OAuth URL
         const authUrl = `${environment.apiUrl}/gallery/auth`;
         const oauthUrl = `${authUrl}/${provider}`;
-        console.log('[OAuth] OAuth URL:', oauthUrl);
+        console.log('[OAuth] Redirecting to OAuth URL:', oauthUrl);
 
-        // Open OAuth in popup window
-        const width = 500;
-        const height = 600;
-        const left = (window.innerWidth - width) / 2 + window.screenX;
-        const top = (window.innerHeight - height) / 2 + window.screenY;
-
-        console.log('[OAuth] Opening popup window...');
-        const popup = window.open(
-            oauthUrl,
-            'OAuth Login',
-            `width=${width},height=${height},left=${left},top=${top},popup=yes,toolbar=no,menubar=no,location=no,status=no`
-        );
-
-        if (!popup) {
-            // Fallback to redirect if popup blocked
-            console.warn('[OAuth] Popup blocked, falling back to redirect');
-            window.location.href = oauthUrl;
-            return;
-        }
-
-        console.log('[OAuth] Popup opened successfully');
-
-        // Listen for message from popup
-        const messageHandler = (event: MessageEvent) => {
-            console.log('[OAuth] Message received:', event.data);
-
-            // Verify origin for security
-            if (event.origin !== window.location.origin) {
-                console.warn('[OAuth] Message from invalid origin:', event.origin);
-                return;
-            }
-
-            switch (event.data.type) {
-                case 'OAUTH_SUCCESS':
-                    this.handleOAuthSuccess(event.data.token, popup);
-                    break;
-
-                case 'OAUTH_EMAIL_CONFLICT':
-                    this.handleOAuthConflict(event.data.message, popup);
-                    break;
-
-                case 'OAUTH_ERROR':
-                    this.handleOAuthError(event.data.error, popup);
-                    break;
-            }
-
-            window.removeEventListener('message', messageHandler);
-        };
-
-        window.addEventListener('message', messageHandler);
-
-        // Check if popup was closed without completing OAuth
-        const checkClosed = setInterval(() => {
-            if (popup.closed) {
-                clearInterval(checkClosed);
-                window.removeEventListener('message', messageHandler);
-            }
-        }, 500);
+        // Redirect to OAuth provider
+        window.location.href = oauthUrl;
     }
 
     handleOAuthCallback(token: string): Observable<any> {
@@ -246,98 +189,5 @@ export class AuthService {
         return url;
     }
 
-    private handleOAuthSuccess(token: string, popup: Window): void {
-        console.log('[OAuth] Success! Processing token...');
 
-        if (popup && !popup.closed) {
-            popup.close();
-        }
-
-        this.handleOAuthCallback(token).subscribe({
-            next: (response) => {
-                console.log('[OAuth] User data fetched successfully');
-                const user = this.currentUser();
-
-                // Show welcome message based on isNewUser
-                if (response?.data?.isNewUser) {
-                    this.toastService.success(
-                        `Welcome to VibeSquare, ${user?.username}! 🎉`,
-                        7000
-                    );
-
-                    // Suggest username change if auto-generated (ends with _1234)
-                    if (user?.username.match(/_\d{4}$/)) {
-                        setTimeout(() => {
-                            this.toastService.info(
-                                'Tip: You can change your username in Settings',
-                                10000
-                            );
-                        }, 2000);
-                    }
-                } else {
-                    this.toastService.success(
-                        `Welcome back, ${user?.username}!`,
-                        5000
-                    );
-                }
-
-                const url = this.getOAuthReturnUrl();
-                this.router.navigateByUrl(url);
-            },
-            error: (err) => {
-                console.error('[OAuth] Failed to fetch user data:', err);
-                this.toastService.error('Failed to complete sign in');
-                this.router.navigateByUrl('/auth/login?error=oauth_failed');
-            }
-        });
-    }
-
-    private handleOAuthConflict(message: string, popup: Window): void {
-        console.log('[OAuth] Email conflict detected');
-
-        if (popup && !popup.closed) {
-            popup.close();
-        }
-
-        // Show email conflict dialog
-        this.showEmailConflictDialog(message);
-    }
-
-    private handleOAuthError(error: string, popup: Window): void {
-        console.error('[OAuth] Error received:', error);
-
-        if (popup && !popup.closed) {
-            popup.close();
-        }
-
-        this.toastService.error(error, 7000);
-        this.router.navigateByUrl('/auth/login?error=' + encodeURIComponent(error));
-    }
-
-    private showEmailConflictDialog(message: string): void {
-        const config = new OverlayConfig({
-            hasBackdrop: true,
-            backdropClass: 'modal-backdrop',
-            panelClass: 'modal-panel',
-            positionStrategy: this.overlay.position()
-                .global()
-                .centerHorizontally()
-                .centerVertically(),
-            scrollStrategy: this.overlay.scrollStrategies.block()
-        });
-
-        const overlayRef = this.overlay.create(config);
-        const portal = new ComponentPortal(EmailConflictDialogComponent);
-        const componentRef = overlayRef.attach(portal);
-
-        componentRef.instance.data = { message };
-        componentRef.instance.close = () => {
-            overlayRef.dispose();
-        };
-
-        overlayRef.backdropClick().subscribe(() => overlayRef.dispose());
-        overlayRef.keydownEvents().subscribe(e => {
-            if (e.key === 'Escape') overlayRef.dispose();
-        });
-    }
 }

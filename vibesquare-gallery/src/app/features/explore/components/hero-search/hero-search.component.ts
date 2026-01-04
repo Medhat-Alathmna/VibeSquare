@@ -17,7 +17,7 @@ export interface RotatingWord {
 @Component({
   selector: 'app-hero-search',
   standalone: true,
-  imports: [CommonModule, FormsModule, LlmDropdownComponent],
+  imports: [CommonModule, FormsModule],
   templateUrl: './hero-search.component.html',
   styleUrls: ['./hero-search.component.css']
 })

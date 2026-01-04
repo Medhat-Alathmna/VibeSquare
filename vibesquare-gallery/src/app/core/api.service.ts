@@ -117,6 +117,9 @@ export class ApiService {
     }
     httpOptions.headers = headers;
 
+    // Enable credentials to receive and send cookies (e.g., refresh token)
+    httpOptions.withCredentials = true;
+
     return this.httpClient.post<T>(`${this.apiUrl}${this.formatUrl(url)}`, body, httpOptions) as Observable<T>;
   }
 }
