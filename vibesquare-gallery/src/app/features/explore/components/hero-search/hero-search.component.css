@@ -107,6 +107,29 @@
   }
 }
 
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Options Panel */
+.options-panel {
+  box-shadow:
+    0 0 0 1px rgba(255, 255, 255, 0.05),
+    0 10px 30px -10px rgba(0, 0, 0, 0.5);
+}
+
+.animate-slideDown {
+  animation: slideDown 0.3s ease-out;
+}
+
 /* Responsive adjustments */
 @media (max-width: 640px) {
   .hero-search-section {

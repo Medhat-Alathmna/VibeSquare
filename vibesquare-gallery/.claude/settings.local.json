@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run build:*)",
+      "Bash(dir:*)",
+      "Bash(findstr:*)",
+      "Bash(npx ng build:*)",
+      "Bash(npm run build:production:*)",
+      "Bash(npm run dev:*)",
+      "Bash(curl:*)",
+      "Bash(ng serve:*)",
+      "Bash(ls:*)",
+      "Bash(npm start)",
+      "Bash(tree:*)"
+    ]
+  }
+}

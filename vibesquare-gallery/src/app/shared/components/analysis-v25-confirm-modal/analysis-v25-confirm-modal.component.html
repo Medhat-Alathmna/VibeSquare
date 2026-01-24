@@ -1,0 +1,178 @@
+<div class="modal-content">
+    <!-- Header -->
+    <div class="modal-header">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-secondary/20 flex items-center justify-center">
+                <svg class="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+            </div>
+            <div>
+                <h3 class="text-lg font-display font-bold text-white">Generate PRD</h3>
+                <p class="text-sm text-gray-400">Confirm analysis settings</p>
+            </div>
+        </div>
+        <button (click)="onCancel()"
+            class="w-8 h-8 flex items-center justify-center rounded-full bg-dark-border/50 text-gray-400 hover:text-white hover:bg-dark-border transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+        </button>
+    </div>
+
+    <!-- Body -->
+    <div class="modal-body">
+        <!-- URL Display -->
+        <div class="mb-5 p-4 bg-dark-bg rounded-lg border border-dark-border">
+            <div class="flex items-center gap-2 mb-2">
+                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
+                </svg>
+                <span class="text-xs text-gray-500 uppercase tracking-wider">URL to analyze</span>
+            </div>
+            <p class="text-white font-medium truncate">{{ data.url }}</p>
+        </div>
+
+        <!-- Analysis Settings -->
+        <div class="space-y-4">
+            <!-- Pipeline Type -->
+            <div class="p-4 bg-dark-bg rounded-lg border border-dark-border">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-secondary/10 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-secondary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" [attr.d]="pipelineIcon" />
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="text-xs text-gray-500 uppercase tracking-wider block">Analysis Type</span>
+                            <span class="text-white font-medium">{{ pipelineLabel }}</span>
+                        </div>
+                    </div>
+                    <span class="text-xs text-gray-400 bg-dark-border/50 px-2 py-1 rounded">{{ pipelineDescription }}</span>
+                </div>
+            </div>
+
+            <!-- Detail Level -->
+            <div class="p-4 bg-dark-bg rounded-lg border border-dark-border">
+                <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="w-9 h-9 rounded-lg bg-purple-500/10 flex items-center justify-center">
+                            <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                            </svg>
+                        </div>
+                        <div>
+                            <span class="text-xs text-gray-500 uppercase tracking-wider block">Detail Level</span>
+                            <span class="text-white font-medium">{{ detailLabel }}</span>
+                        </div>
+                    </div>
+                    <span class="text-xs text-gray-400 bg-dark-border/50 px-2 py-1 rounded">{{ detailDescription }}</span>
+                </div>
+            </div>
+
+            <!-- Divider -->
+            <div class="border-t border-dark-border"></div>
+
+            <!-- Estimated Time -->
+            <div class="flex items-center justify-between p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+                <div class="flex items-center gap-3">
+                    <div class="w-9 h-9 rounded-lg bg-amber-500/20 flex items-center justify-center">
+                        <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                    </div>
+                    <div>
+                        <span class="text-xs text-amber-400/80 uppercase tracking-wider block">Estimated Time</span>
+                        <span class="text-amber-300 font-bold text-lg">{{ estimatedTime }}</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Token Cost (if available) -->
+            @if (estimatedTokens > 0) {
+            <div class="p-4 rounded-lg border"
+                [class.bg-green-500/10]="hasEnoughTokens"
+                [class.border-green-500/30]="hasEnoughTokens"
+                [class.bg-red-500/10]="!hasEnoughTokens"
+                [class.border-red-500/30]="!hasEnoughTokens">
+                <div class="space-y-2">
+                    <!-- Estimated Cost -->
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-400">Estimated cost:</span>
+                        <span class="text-white font-medium">{{ formatNumber(estimatedTokens) }} tokens</span>
+                    </div>
+
+                    <!-- Current Balance -->
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-gray-400">Current balance:</span>
+                        <span class="text-white font-medium">{{ formatNumber(data.tokensRemaining) }} tokens</span>
+                    </div>
+
+                    <!-- Divider -->
+                    <div class="border-t border-dark-border"></div>
+
+                    <!-- After Analysis -->
+                    @if (hasEnoughTokens) {
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-green-400">Balance after:</span>
+                        <span class="text-green-400 font-bold">{{ formatNumber(tokensAfter) }} tokens</span>
+                    </div>
+                    } @else {
+                    <div class="flex items-center justify-between">
+                        <span class="text-xs text-red-400">Shortage:</span>
+                        <span class="text-red-400 font-bold">{{ formatNumber(shortage) }} tokens</span>
+                    </div>
+                    }
+                </div>
+            </div>
+            }
+
+            <!-- Info Note -->
+            <div class="flex items-start gap-2 text-xs text-gray-400">
+                <svg class="w-4 h-4 text-gray-500 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span>PRD generation may take longer for complex websites. You'll receive a complete Product Requirements Document with technical specifications.</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="modal-footer">
+        <button (click)="onCancel()"
+            class="px-5 py-2.5 text-sm font-medium text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-dark-border/50">
+            Cancel
+        </button>
+
+        <app-button [disabled]="isProcessing() || (estimatedTokens > 0 && !hasEnoughTokens)" (click)="onConfirm()">
+            @if (isProcessing()) {
+            <span class="flex items-center gap-2">
+                <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                </svg>
+                Starting...
+            </span>
+            } @else {
+            <span class="flex items-center gap-2">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                @if (estimatedTokens > 0 && !hasEnoughTokens) {
+                Insufficient Tokens
+                } @else {
+                Generate PRD
+                }
+            </span>
+            }
+        </app-button>
+    </div>
+</div>

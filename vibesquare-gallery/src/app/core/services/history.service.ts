@@ -11,6 +11,14 @@ import {
   AnalysisDetailResponse,
   DeleteAnalysisResponse
 } from '../models/history.model';
+import {
+  PrdListItem,
+  PrdDetail,
+  PrdListResponse,
+  PrdDetailResponse,
+  PrdDeleteResponse,
+  PrdPaginationMeta
+} from '../models/prd.model';
 
 @Injectable({
   providedIn: 'root'
@@ -18,17 +26,29 @@ import {
 export class HistoryService {
   private apiService = inject(ApiService);
 
-  // State signals
+  // State signals - Analysis History
   private historySignal = signal<PaginatedResult<AnalysisHistoryItem> | null>(null);
   private selectedAnalysisSignal = signal<IGalleryAnalysis | null>(null);
   private loadingSignal = signal<boolean>(false);
   private errorSignal = signal<string | null>(null);
 
-  // Public readonly signals
+  // State signals - PRD History
+  private prdListSignal = signal<PrdListItem[]>([]);
+  private prdPaginationSignal = signal<PrdPaginationMeta | null>(null);
+  private selectedPrdSignal = signal<PrdDetail | null>(null);
+  private prdLoadingSignal = signal<boolean>(false);
+
+  // Public readonly signals - Analysis
   readonly history = this.historySignal.asReadonly();
   readonly selectedAnalysis = this.selectedAnalysisSignal.asReadonly();
   readonly isLoading = this.loadingSignal.asReadonly();
   readonly error = this.errorSignal.asReadonly();
+
+  // Public readonly signals - PRD
+  readonly prdList = this.prdListSignal.asReadonly();
+  readonly prdPagination = this.prdPaginationSignal.asReadonly();
+  readonly selectedPrd = this.selectedPrdSignal.asReadonly();
+  readonly prdLoading = this.prdLoadingSignal.asReadonly();
 
   /**
    * GET /api/gallery/analyze/history - Get paginated analysis history
@@ -125,6 +145,94 @@ export class HistoryService {
    */
   clearError(): void {
     this.errorSignal.set(null);
+  }
+
+  // ============ PRD History Methods ============
+
+  /**
+   * GET /api/prd - Get paginated PRD list
+   */
+  getPrdHistory(page: number = 1, limit: number = 10): Observable<PrdListResponse> {
+    this.prdLoadingSignal.set(true);
+
+    return this.apiService.get<PrdListResponse>('api/prd', {
+      params: {
+        page: page.toString(),
+        limit: limit.toString()
+      }
+    }).pipe(
+      tap(response => {
+        this.prdLoadingSignal.set(false);
+        if (response.success || response.data) {
+          this.prdListSignal.set(response.data.prds);
+          this.prdPaginationSignal.set(response.data.pagination);
+        }
+      }),
+      catchError((error: HttpErrorResponse) => {
+        this.prdLoadingSignal.set(false);
+        this.errorSignal.set(this.extractErrorMessage(error));
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * GET /api/prd/:id - Get PRD by ID
+   */
+  getPrdById(id: string): Observable<PrdDetailResponse> {
+    this.prdLoadingSignal.set(true);
+
+    return this.apiService.get<PrdDetailResponse>(`api/prd/${id}`).pipe(
+      tap(response => {
+        this.prdLoadingSignal.set(false);
+        if (response.success || response.data) {
+          this.selectedPrdSignal.set(response.data);
+        }
+      }),
+      catchError((error: HttpErrorResponse) => {
+        this.prdLoadingSignal.set(false);
+        this.errorSignal.set(this.extractErrorMessage(error));
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * GET /api/prd/:id/download - Download PRD as markdown
+   */
+  downloadPrd(id: string): Observable<Blob> {
+    return this.apiService.getFile<Blob>(`api/prd/${id}/download`);
+  }
+
+  /**
+   * DELETE /api/prd/:id - Delete PRD
+   */
+  deletePrd(id: string): Observable<PrdDeleteResponse> {
+    return this.apiService.delete<PrdDeleteResponse>(`api/prd/${id}`).pipe(
+      tap(() => {
+        // Remove from local list
+        this.prdListSignal.update(prds => prds.filter(p => p.id !== id));
+        // Update pagination count
+        const pagination = this.prdPaginationSignal();
+        if (pagination) {
+          this.prdPaginationSignal.set({
+            ...pagination,
+            total: pagination.total - 1
+          });
+        }
+      }),
+      catchError((error: HttpErrorResponse) => {
+        this.errorSignal.set(this.extractErrorMessage(error));
+        return throwError(() => error);
+      })
+    );
+  }
+
+  /**
+   * Clear selected PRD
+   */
+  clearSelectedPrd(): void {
+    this.selectedPrdSignal.set(null);
   }
 
   private extractErrorMessage(error: HttpErrorResponse): string {

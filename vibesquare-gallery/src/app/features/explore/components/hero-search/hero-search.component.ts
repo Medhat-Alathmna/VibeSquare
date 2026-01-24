@@ -3,10 +3,18 @@ import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { LlmDropdownComponent } from '../../../../shared/components/llm-dropdown/llm-dropdown.component';
 import { LlmType } from '../../../../core/models/llm.model';
+import {
+  PipelineType,
+  DetailLevel,
+  PIPELINE_TYPE_OPTIONS,
+  DETAIL_LEVEL_OPTIONS,
+  getEstimatedTime
+} from '../../../../core/models/prd.model';
 
 export interface SearchEvent {
   url: string;
-  llmType: LlmType;
+  pipelineType: PipelineType;
+  detailLevel: DetailLevel;
 }
 
 export interface RotatingWord {
@@ -47,10 +55,20 @@ export class HeroSearchComponent implements OnInit, OnDestroy {
   selectedLlm = signal<LlmType>('opus-4.5');
   isLoading = signal<boolean>(false);
 
+  // V2.5 Options
+  selectedPipelineType = signal<PipelineType>('both');
+  selectedDetailLevel = signal<DetailLevel>('detailed');
+  showOptionsPanel = signal<boolean>(false);
+
+  // Expose options for template
+  pipelineTypeOptions = PIPELINE_TYPE_OPTIONS;
+  detailLevelOptions = DETAIL_LEVEL_OPTIONS;
+
   // Computed
   isValidUrl = computed(() => this.validateUrl(this.urlInput()));
   currentWord = computed(() => this.rotatingWords[this.currentWordIndex()]);
   isDisabled = computed(() => this.isLoading() || this.externalLoading() || !this.isValidUrl());
+  estimatedTime = computed(() => getEstimatedTime(this.selectedPipelineType(), this.selectedDetailLevel()));
 
   ngOnInit() {
     this.startWordRotation();
@@ -83,17 +101,28 @@ export class HeroSearchComponent implements OnInit, OnDestroy {
     this.urlChange.emit(value);
   }
 
-  onLlmChange(llmType: LlmType) {
-    this.selectedLlm.set(llmType);
-  }
+
 
   onAnalyze() {
     if (this.isValidUrl()) {
       this.search.emit({
         url: this.urlInput(),
-        llmType: this.selectedLlm()
+        pipelineType: this.selectedPipelineType(),
+        detailLevel: this.selectedDetailLevel()
       });
     }
+  }
+
+  toggleOptionsPanel() {
+    this.showOptionsPanel.update(v => !v);
+  }
+
+  selectPipelineType(type: PipelineType) {
+    this.selectedPipelineType.set(type);
+  }
+
+  selectDetailLevel(level: DetailLevel) {
+    this.selectedDetailLevel.set(level);
   }
 
   onKeydown(event: KeyboardEvent) {

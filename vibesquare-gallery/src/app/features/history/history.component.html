@@ -1,10 +1,47 @@
 <div class="min-h-screen bg-dark-bg text-white">
   <div class="max-w-6xl mx-auto px-4 py-8">
     <!-- Header -->
-    <div class="mb-8">
+    <div class="mb-6">
       <h1 class="text-3xl font-display font-bold text-white mb-2">Analysis History</h1>
-      <p class="text-gray-400">View and manage your previous website analyses</p>
+      <p class="text-gray-400">View and manage your previous analyses and PRD documents</p>
     </div>
+
+    <!-- Tab Navigation -->
+    <div class="flex items-center gap-1 mb-6 border-b border-dark-border">
+      <button
+        (click)="switchTab('analyses')"
+        class="px-4 py-3 text-sm font-medium border-b-2 transition-colors"
+        [class.border-secondary]="activeTab() === 'analyses'"
+        [class.text-white]="activeTab() === 'analyses'"
+        [class.border-transparent]="activeTab() !== 'analyses'"
+        [class.text-gray-400]="activeTab() !== 'analyses'"
+        [class.hover:text-gray-300]="activeTab() !== 'analyses'">
+        <span class="flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+          </svg>
+          Prompt Analyses
+        </span>
+      </button>
+      <button
+        (click)="switchTab('prds')"
+        class="px-4 py-3 text-sm font-medium border-b-2 transition-colors"
+        [class.border-secondary]="activeTab() === 'prds'"
+        [class.text-white]="activeTab() === 'prds'"
+        [class.border-transparent]="activeTab() !== 'prds'"
+        [class.text-gray-400]="activeTab() !== 'prds'"
+        [class.hover:text-gray-300]="activeTab() !== 'prds'">
+        <span class="flex items-center gap-2">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+          PRD Documents
+        </span>
+      </button>
+    </div>
+
+    <!-- ============ ANALYSES TAB ============ -->
+    @if (activeTab() === 'analyses') {
 
     <!-- Loading State -->
     @if (isLoading() && analyses().length === 0) {
@@ -202,6 +239,209 @@
         </p>
       }
     }
+
+    } <!-- End of analyses tab -->
+
+    <!-- ============ PRDs TAB ============ -->
+    @if (activeTab() === 'prds') {
+
+    <!-- PRD Loading State -->
+    @if (prdLoading() && prds().length === 0) {
+      <div class="flex items-center justify-center py-20">
+        <div class="flex items-center gap-3 text-gray-400">
+          <svg class="w-6 h-6 animate-spin" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+          </svg>
+          <span>Loading PRD documents...</span>
+        </div>
+      </div>
+    }
+
+    <!-- PRD Empty State -->
+    @if (!prdLoading() && prds().length === 0) {
+      <div class="text-center py-20">
+        <div class="w-20 h-20 mx-auto mb-6 rounded-full bg-dark-surface flex items-center justify-center">
+          <svg class="w-10 h-10 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+          </svg>
+        </div>
+        <h3 class="text-xl font-semibold text-white mb-2">No PRD documents yet</h3>
+        <p class="text-gray-400 mb-6">Generate PRDs by analyzing websites with the V2.5 pipeline</p>
+        <a
+          routerLink="/explore"
+          class="inline-flex items-center gap-2 px-6 py-3 bg-secondary text-black font-semibold rounded-lg hover:bg-secondary/90 transition-colors">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+          </svg>
+          Generate PRD
+        </a>
+      </div>
+    }
+
+    <!-- PRD List -->
+    @if (prds().length > 0) {
+      <div class="space-y-4">
+        @for (prd of prds(); track prd.id) {
+          <div
+            (click)="viewPrd(prd)"
+            class="bg-dark-surface border border-dark-border rounded-xl p-5 hover:border-secondary/50 transition-all cursor-pointer group">
+            <div class="flex flex-col md:flex-row md:items-center gap-4">
+              <!-- Main Info -->
+              <div class="flex-1 min-w-0">
+                <!-- URL -->
+                <div class="flex items-center gap-2 mb-2">
+                  <svg class="w-4 h-4 text-gray-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1"/>
+                  </svg>
+                  <span class="text-sm text-gray-400 truncate">{{ prd.sourceUrl }}</span>
+                </div>
+
+                <!-- Badges -->
+                <div class="flex flex-wrap items-center gap-2">
+                  <!-- Pipeline Type -->
+                  <span class="px-2 py-0.5 text-xs font-medium bg-secondary/10 text-secondary rounded">
+                    {{ getPipelineTypeLabel(prd.pipelineType) }}
+                  </span>
+                  <!-- Detail Level -->
+                  <span class="px-2 py-0.5 text-xs font-medium bg-purple-500/10 text-purple-400 rounded">
+                    {{ getDetailLevelLabel(prd.detailLevel) }}
+                  </span>
+                  <!-- QA Status -->
+                  @if (prd.qaApproved) {
+                    <span class="px-2 py-0.5 text-xs font-medium bg-green-500/10 text-green-400 rounded flex items-center gap-1">
+                      <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                      </svg>
+                      QA Passed
+                    </span>
+                  }
+                </div>
+              </div>
+
+              <!-- Meta Info -->
+              <div class="flex flex-wrap items-center gap-3 md:flex-col md:items-end md:gap-2">
+                <!-- Validation Score -->
+                <div class="flex items-center gap-1.5">
+                  <span class="text-sm text-gray-400">Score:</span>
+                  <span class="text-lg font-bold {{ getScoreColor(prd.validationScore) }}">{{ prd.validationScore }}%</span>
+                </div>
+
+                <!-- Date -->
+                <span class="text-sm text-gray-500">{{ formatDate(prd.createdAt) }}</span>
+              </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="flex items-center gap-2 mt-4 pt-4 border-t border-dark-border">
+              <!-- View Button -->
+              <button
+                (click)="viewPrd(prd); $event.stopPropagation()"
+                [disabled]="loadingPrdId() === prd.id"
+                class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-dark-bg rounded-lg hover:bg-dark-border transition-colors disabled:opacity-50">
+                @if (loadingPrdId() === prd.id) {
+                  <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                } @else {
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                  </svg>
+                }
+                <span>View</span>
+              </button>
+
+              <!-- Download Button -->
+              <button
+                (click)="downloadPrd(prd, $event)"
+                [disabled]="downloadingPrdId() === prd.id"
+                class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-white bg-dark-bg rounded-lg hover:bg-dark-border transition-colors disabled:opacity-50">
+                @if (downloadingPrdId() === prd.id) {
+                  <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                } @else {
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                  </svg>
+                }
+                <span>Download</span>
+              </button>
+
+              <!-- Spacer -->
+              <div class="flex-1"></div>
+
+              <!-- Delete Button -->
+              <button
+                (click)="deletePrd(prd.id, $event)"
+                [disabled]="deletingPrdId() === prd.id"
+                class="flex items-center gap-2 px-4 py-2 text-sm font-medium text-red-400 bg-red-400/10 rounded-lg hover:bg-red-400/20 transition-colors disabled:opacity-50">
+                @if (deletingPrdId() === prd.id) {
+                  <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                } @else {
+                  <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                  </svg>
+                }
+                <span>Delete</span>
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+
+      <!-- PRD Pagination -->
+      @if (prdTotalPages() > 1) {
+        <div class="flex items-center justify-center gap-2 mt-8">
+          <!-- Previous -->
+          <button
+            (click)="prdPrevPage()"
+            [disabled]="!prdHasPrev()"
+            class="p-2 rounded-lg bg-dark-surface border border-dark-border hover:bg-dark-border disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+            </svg>
+          </button>
+
+          <!-- Page Numbers -->
+          @for (page of getPrdPaginationRange(); track page) {
+            <button
+              (click)="prdGoToPage(page)"
+              [class.bg-secondary]="page === prdCurrentPage()"
+              [class.text-black]="page === prdCurrentPage()"
+              [class.bg-dark-surface]="page !== prdCurrentPage()"
+              [class.border-dark-border]="page !== prdCurrentPage()"
+              class="w-10 h-10 rounded-lg border font-medium transition-colors hover:bg-dark-border">
+              {{ page }}
+            </button>
+          }
+
+          <!-- Next -->
+          <button
+            (click)="prdNextPage()"
+            [disabled]="!prdHasNext()"
+            class="p-2 rounded-lg bg-dark-surface border border-dark-border hover:bg-dark-border disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Page Info -->
+        <p class="text-center text-sm text-gray-500 mt-4">
+          Showing {{ prds().length }} of {{ prdTotalItems() }} PRD documents
+        </p>
+      }
+    }
+
+    } <!-- End of prds tab -->
+
   </div>
 </div>
 

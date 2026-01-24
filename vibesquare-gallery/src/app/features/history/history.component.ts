@@ -1,8 +1,15 @@
 import { Component, inject, OnInit, signal, computed } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterLink } from '@angular/router';
+import { Overlay, OverlayConfig } from '@angular/cdk/overlay';
+import { ComponentPortal } from '@angular/cdk/portal';
 import { HistoryService } from '../../core/services/history.service';
+import { ToastService } from '../../core/services/toast.service';
 import { AnalysisHistoryItem, IGalleryAnalysis } from '../../core/models/history.model';
+import { PrdListItem, PrdDetail, formatPipelineType, formatDetailLevel, getValidationScoreColor } from '../../core/models/prd.model';
+import { PrdViewerModalComponent, PrdViewerModalData } from '../../shared/components/prd-viewer-modal/prd-viewer-modal.component';
+
+export type HistoryTab = 'analyses' | 'prds';
 
 @Component({
   selector: 'app-history',
@@ -13,14 +20,25 @@ import { AnalysisHistoryItem, IGalleryAnalysis } from '../../core/models/history
 })
 export class HistoryComponent implements OnInit {
   private historyService = inject(HistoryService);
+  private toastService = inject(ToastService);
+  private overlay = inject(Overlay);
 
-  // Service signals
+  // Service signals - Analyses
   history = this.historyService.history;
   selectedAnalysis = this.historyService.selectedAnalysis;
   isLoading = this.historyService.isLoading;
   error = this.historyService.error;
 
-  // Local state
+  // Service signals - PRDs
+  prdList = this.historyService.prdList;
+  prdPagination = this.historyService.prdPagination;
+  selectedPrd = this.historyService.selectedPrd;
+  prdLoading = this.historyService.prdLoading;
+
+  // Local state - Tabs
+  activeTab = signal<HistoryTab>('analyses');
+
+  // Local state - Analyses
   currentPage = signal(1);
   itemsPerPage = signal(10);
   showModal = signal(false);
@@ -28,16 +46,40 @@ export class HistoryComponent implements OnInit {
   deletingId = signal<string | null>(null);
   copySuccess = signal(false);
 
-  // Computed
+  // Local state - PRDs
+  prdCurrentPage = signal(1);
+  loadingPrdId = signal<string | null>(null);
+  deletingPrdId = signal<string | null>(null);
+  downloadingPrdId = signal<string | null>(null);
+
+  // Computed - Analyses
   analyses = computed(() => this.history()?.data || []);
   totalPages = computed(() => this.history()?.totalPages || 1);
   totalItems = computed(() => this.history()?.total || 0);
   hasNext = computed(() => this.currentPage() < this.totalPages());
   hasPrev = computed(() => this.currentPage() > 1);
 
+  // Computed - PRDs
+  prds = computed(() => this.prdList() || []);
+  prdTotalPages = computed(() => this.prdPagination()?.totalPages || 1);
+  prdTotalItems = computed(() => this.prdPagination()?.total || 0);
+  prdHasNext = computed(() => this.prdCurrentPage() < this.prdTotalPages());
+  prdHasPrev = computed(() => this.prdCurrentPage() > 1);
+
   ngOnInit(): void {
     this.loadHistory();
   }
+
+  // ============ Tab Methods ============
+
+  switchTab(tab: HistoryTab): void {
+    this.activeTab.set(tab);
+    if (tab === 'prds' && this.prds().length === 0) {
+      this.loadPrdHistory();
+    }
+  }
+
+  // ============ Analysis Methods ============
 
   loadHistory(): void {
     this.historyService.getHistory(this.currentPage(), this.itemsPerPage()).subscribe();
@@ -119,6 +161,163 @@ export class HistoryComponent implements OnInit {
       }
     });
   }
+
+  // ============ PRD Methods ============
+
+  loadPrdHistory(): void {
+    this.historyService.getPrdHistory(this.prdCurrentPage(), this.itemsPerPage()).subscribe();
+  }
+
+  prdNextPage(): void {
+    if (this.prdHasNext()) {
+      this.prdCurrentPage.update(p => p + 1);
+      this.loadPrdHistory();
+    }
+  }
+
+  prdPrevPage(): void {
+    if (this.prdHasPrev()) {
+      this.prdCurrentPage.update(p => p - 1);
+      this.loadPrdHistory();
+    }
+  }
+
+  prdGoToPage(page: number): void {
+    if (page >= 1 && page <= this.prdTotalPages()) {
+      this.prdCurrentPage.set(page);
+      this.loadPrdHistory();
+    }
+  }
+
+  viewPrd(prd: PrdListItem): void {
+    this.loadingPrdId.set(prd.id);
+    this.historyService.getPrdById(prd.id).subscribe({
+      next: () => {
+        this.loadingPrdId.set(null);
+        this.showPrdViewerModal();
+      },
+      error: () => {
+        this.loadingPrdId.set(null);
+        this.toastService.error('Failed to load PRD');
+      }
+    });
+  }
+
+  private showPrdViewerModal(): void {
+    const prd = this.selectedPrd();
+    if (!prd) return;
+
+    const config = new OverlayConfig({
+      hasBackdrop: true,
+      backdropClass: 'modal-backdrop',
+      panelClass: 'modal-panel',
+      positionStrategy: this.overlay.position()
+        .global()
+        .centerHorizontally()
+        .centerVertically(),
+      scrollStrategy: this.overlay.scrollStrategies.block()
+    });
+
+    const overlayRef = this.overlay.create(config);
+    const portal = new ComponentPortal(PrdViewerModalComponent);
+    const componentRef = overlayRef.attach(portal);
+
+    componentRef.instance.data = { prd } as PrdViewerModalData;
+    componentRef.instance.close = () => {
+      overlayRef.dispose();
+      this.historyService.clearSelectedPrd();
+    };
+
+    overlayRef.backdropClick().subscribe(() => {
+      overlayRef.dispose();
+      this.historyService.clearSelectedPrd();
+    });
+
+    overlayRef.keydownEvents().subscribe(event => {
+      if (event.key === 'Escape') {
+        overlayRef.dispose();
+        this.historyService.clearSelectedPrd();
+      }
+    });
+  }
+
+  downloadPrd(prd: PrdListItem, event: Event): void {
+    event.stopPropagation();
+    this.downloadingPrdId.set(prd.id);
+    this.historyService.downloadPrd(prd.id).subscribe({
+      next: (blob) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `prd-${prd.id.slice(0, 8)}.md`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+        this.downloadingPrdId.set(null);
+        this.toastService.success('PRD downloaded');
+      },
+      error: () => {
+        this.downloadingPrdId.set(null);
+        this.toastService.error('Failed to download PRD');
+      }
+    });
+  }
+
+  deletePrd(id: string, event: Event): void {
+    event.stopPropagation();
+    if (confirm('Are you sure you want to delete this PRD?')) {
+      this.deletingPrdId.set(id);
+      this.historyService.deletePrd(id).subscribe({
+        next: () => {
+          this.deletingPrdId.set(null);
+          this.toastService.success('PRD deleted');
+        },
+        error: () => {
+          this.deletingPrdId.set(null);
+          this.toastService.error('Failed to delete PRD');
+        }
+      });
+    }
+  }
+
+  getPrdPaginationRange(): number[] {
+    const total = this.prdTotalPages();
+    const current = this.prdCurrentPage();
+    const range: number[] = [];
+
+    let start = Math.max(1, current - 2);
+    let end = Math.min(total, current + 2);
+
+    if (end - start < 4) {
+      if (start === 1) {
+        end = Math.min(total, start + 4);
+      } else {
+        start = Math.max(1, end - 4);
+      }
+    }
+
+    for (let i = start; i <= end; i++) {
+      range.push(i);
+    }
+
+    return range;
+  }
+
+  // PRD Display helpers
+  getPipelineTypeLabel(type: string): string {
+    return formatPipelineType(type as any);
+  }
+
+  getDetailLevelLabel(level: string): string {
+    return formatDetailLevel(level as any);
+  }
+
+  getScoreColor(score: number): string {
+    return getValidationScoreColor(score);
+  }
+
+  // ============ Formatting Methods ============
 
   formatDate(dateString: string): string {
     const date = new Date(dateString);
