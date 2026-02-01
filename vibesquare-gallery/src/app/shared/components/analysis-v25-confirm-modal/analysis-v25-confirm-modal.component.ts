@@ -1,4 +1,4 @@
-import { Component, signal } from '@angular/core';
+import { Component, signal, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { ButtonComponent } from '../button/button.component';
 import {
@@ -8,6 +8,7 @@ import {
     DETAIL_LEVEL_OPTIONS,
     getEstimatedTime
 } from '../../../core/models/prd.model';
+import { PrdService } from '../../../core/services/prd.service';
 
 export interface AnalysisV25ConfirmModalData {
     url: string;
@@ -24,12 +25,15 @@ export interface AnalysisV25ConfirmModalData {
     templateUrl: './analysis-v25-confirm-modal.component.html',
     styleUrls: ['./analysis-v25-confirm-modal.component.css']
 })
-export class AnalysisV25ConfirmModalComponent {
+export class AnalysisV25ConfirmModalComponent implements OnInit {
+    private prdService = inject(PrdService);
+
     // These will be set by the modal opener
     data!: AnalysisV25ConfirmModalData;
     close!: (result?: boolean) => void;
 
     isProcessing = signal(false);
+    cachedResultAvailable = signal<boolean>(false);
 
     get estimatedTime(): string {
         return getEstimatedTime(this.data.pipelineType, this.data.detailLevel);
@@ -82,6 +86,33 @@ export class AnalysisV25ConfirmModalComponent {
 
     formatNumber(num: number): string {
         return num.toLocaleString();
+    }
+
+    ngOnInit(): void {
+        if (this.data?.url) {
+            this.checkCachedResult(this.data.url);
+        }
+    }
+
+    private checkCachedResult(url: string): void {
+        this.prdService.searchPrdByUrl(url).subscribe({
+            next: (response) => {
+                // Check if there's a recent cached result (within 7 days)
+                if (response.success && response.data && response.data.length > 0) {
+                    const latestPrd = response.data[0];
+                    const createdAt = new Date(latestPrd.createdAt);
+                    const daysSinceCreation = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
+
+                    // If within cache TTL (7 days)
+                    if (daysSinceCreation <= 7) {
+                        this.cachedResultAvailable.set(true);
+                    }
+                }
+            },
+            error: (err) => {
+                console.warn('Failed to check cached result:', err);
+            }
+        });
     }
 
     onConfirm(): void {

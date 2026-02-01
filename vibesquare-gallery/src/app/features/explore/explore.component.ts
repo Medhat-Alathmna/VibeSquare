@@ -18,7 +18,15 @@ import { AnalysisV25ConfirmModalComponent, AnalysisV25ConfirmModalData } from '.
 import { AnalysisProcessingModalComponent, AnalysisProcessingModalData } from '../../shared/components/analysis-processing-modal/analysis-processing-modal.component';
 import { PrdResultModalComponent, PrdResultModalData } from '../../shared/components/prd-result-modal/prd-result-modal.component';
 import { QuotaExceededModalComponent, QuotaExceededModalData } from '../../shared/components/quota-exceeded-modal/quota-exceeded-modal.component';
-import { AnalysisV25Request, AnalysisV25Result } from '../../core/models/prd.model';
+import {
+  AnalysisV25Request,
+  AnalysisV25Result,
+  ClarificationResponse,
+  FallbackRequest,
+  ConfidenceData
+} from '../../core/models/prd.model';
+import { ClarificationModalComponent, ClarificationModalData } from '../../shared/components/clarification-modal/clarification-modal.component';
+import { FallbackApprovalDialogComponent, FallbackApprovalResult } from '../../shared/components/fallback-approval-dialog/fallback-approval-dialog.component';
 
 @Component({
   selector: 'app-explore',
@@ -57,6 +65,11 @@ export class ExploreComponent implements OnInit {
 
   // Loading toast ID for estimate
   private estimateToastId: string | null = null;
+
+  // V2.5 clarification/fallback state
+  private currentResumeToken: string | null = null;
+  private currentSearchEvent: SearchEvent | null = null;
+  private lastConfidenceData: ConfidenceData | null = null;
 
   ngOnInit() {
     this.projectService.loadProjects();
@@ -285,6 +298,10 @@ export class ExploreComponent implements OnInit {
   }
 
   private executeV25Analysis(event: SearchEvent): void {
+    // Store current search event for use in clarification/fallback flows
+    this.currentSearchEvent = event;
+    this.lastConfidenceData = null;
+
     // Show processing modal
     this.showProcessingModal(event);
 
@@ -296,18 +313,13 @@ export class ExploreComponent implements OnInit {
 
     this.prdService.analyzeV25(request).subscribe({
       next: (response) => {
-        // Close processing modal
-        this.closeProcessingModal();
-
-        if (response.success || response.data) {
-          this.showPrdResultModal(response.data);
-        } else {
-          this.toastService.error(response.message || 'PRD generation failed');
-        }
+        // Use V2.5 response handler for proper status handling
+        this.handleV25Response(response);
       },
       error: (error) => {
         // Close processing modal
         this.closeProcessingModal();
+        this.resetV25State();
 
         if (error.status === 402) {
           this.showQuotaExceededModal();
@@ -448,5 +460,251 @@ export class ExploreComponent implements OnInit {
         this.prdService.reset();
       }
     });
+  }
+
+  // ============================================
+  // V2.5 Clarification & Fallback Methods
+  // ============================================
+
+  private showClarificationModal(
+    questions: ClarificationModalData['questions'],
+    overallConfidence: number,
+    resumeToken: string
+  ): void {
+    const config = new OverlayConfig({
+      hasBackdrop: true,
+      backdropClass: 'modal-backdrop',
+      panelClass: 'modal-panel',
+      positionStrategy: this.overlay.position()
+        .global()
+        .centerHorizontally()
+        .centerVertically(),
+      scrollStrategy: this.overlay.scrollStrategies.block()
+    });
+
+    const overlayRef = this.overlay.create(config);
+    const portal = new ComponentPortal(ClarificationModalComponent);
+    const componentRef = overlayRef.attach(portal);
+
+    // Set data
+    componentRef.instance.data = {
+      questions,
+      overallConfidence
+    } as ClarificationModalData;
+
+    // Set close function
+    componentRef.instance.close = (responses?: ClarificationResponse[] | null) => {
+      overlayRef.dispose();
+
+      if (responses && responses.length > 0) {
+        // User provided answers, submit clarifications
+        this.submitClarifications(resumeToken, responses);
+      } else {
+        // User skipped, continue without clarifications
+        this.continuePipelineWithoutClarifications(resumeToken);
+      }
+    };
+
+    // Close on escape key (acts as skip)
+    overlayRef.keydownEvents().subscribe(event => {
+      if (event.key === 'Escape') {
+        overlayRef.dispose();
+        this.continuePipelineWithoutClarifications(resumeToken);
+      }
+    });
+  }
+
+  private submitClarifications(_resumeToken: string, clarifications: ClarificationResponse[]): void {
+    // Show processing modal again
+    if (this.currentSearchEvent) {
+      this.showProcessingModal(this.currentSearchEvent);
+    }
+
+    // resumeToken is already set in prdService via SSE updates
+    this.prdService.submitClarifications(clarifications).subscribe({
+      next: (response) => {
+        this.handleV25Response(response);
+      },
+      error: (error) => {
+        this.closeProcessingModal();
+        const message = error.error?.message || 'Failed to submit clarifications';
+        this.toastService.error(message);
+      }
+    });
+  }
+
+  private continuePipelineWithoutClarifications(_resumeToken: string): void {
+    // Continue with empty clarifications (skip all)
+    if (this.currentSearchEvent) {
+      this.showProcessingModal(this.currentSearchEvent);
+    }
+
+    // resumeToken is already set in prdService via SSE updates
+    this.prdService.submitClarifications([]).subscribe({
+      next: (response) => {
+        this.handleV25Response(response);
+      },
+      error: (error) => {
+        this.closeProcessingModal();
+        const message = error.error?.message || 'Failed to continue pipeline';
+        this.toastService.error(message);
+      }
+    });
+  }
+
+  private showFallbackApprovalDialog(fallbackRequest: FallbackRequest): void {
+    // Close processing modal first
+    this.closeProcessingModal();
+
+    const config = new OverlayConfig({
+      hasBackdrop: true,
+      backdropClass: 'modal-backdrop',
+      panelClass: 'modal-panel',
+      positionStrategy: this.overlay.position()
+        .global()
+        .centerHorizontally()
+        .centerVertically(),
+      scrollStrategy: this.overlay.scrollStrategies.block()
+    });
+
+    const overlayRef = this.overlay.create(config);
+    const portal = new ComponentPortal(FallbackApprovalDialogComponent);
+    const componentRef = overlayRef.attach(portal);
+
+    // Set data
+    componentRef.instance.data = fallbackRequest;
+
+    // Set close function
+    componentRef.instance.close = (result: FallbackApprovalResult) => {
+      overlayRef.dispose();
+      this.handleFallbackDecision(fallbackRequest.resumeToken, result);
+    };
+
+    // Close on escape key (acts as decline)
+    overlayRef.keydownEvents().subscribe(event => {
+      if (event.key === 'Escape') {
+        overlayRef.dispose();
+        this.handleFallbackDecision(fallbackRequest.resumeToken, { approved: false });
+      }
+    });
+  }
+
+  private handleFallbackDecision(_resumeToken: string, result: FallbackApprovalResult): void {
+    // Show processing modal again
+    if (this.currentSearchEvent) {
+      this.showProcessingModal(this.currentSearchEvent);
+    }
+
+    // resumeToken is already set in prdService via SSE updates
+    this.prdService.approveFallback(result.approved, result.targetModel).subscribe({
+      next: (response) => {
+        this.handleV25Response(response);
+      },
+      error: (error) => {
+        this.closeProcessingModal();
+        const message = error.error?.message || 'Failed to process fallback decision';
+        this.toastService.error(message);
+      }
+    });
+  }
+
+  private handleV25Response(response: any): void {
+    // Store confidence data if available
+    if (response.confidence) {
+      this.lastConfidenceData = response.confidence;
+    }
+
+    // Handle different statuses
+    switch (response.status) {
+      case 'needs_clarification':
+        this.closeProcessingModal();
+        if (response.questionsForUser && response.resumeToken) {
+          this.currentResumeToken = response.resumeToken;
+          this.showClarificationModal(
+            response.questionsForUser,
+            response.confidence?.overallScore || 0,
+            response.resumeToken
+          );
+        }
+        break;
+
+      case 'fallback_required':
+        if (response.fallbackRequest) {
+          this.currentResumeToken = response.fallbackRequest.resumeToken;
+          this.showFallbackApprovalDialog(response.fallbackRequest);
+        }
+        break;
+
+      case 'completed':
+        this.closeProcessingModal();
+        if (response.result) {
+          this.showPrdResultModalWithConfidence(response.result, this.lastConfidenceData);
+        }
+        break;
+
+      case 'error':
+        this.closeProcessingModal();
+        this.toastService.error(response.error || 'An error occurred during analysis');
+        break;
+
+      default:
+        // For success/data responses without explicit status
+        if (response.success || response.data) {
+          this.closeProcessingModal();
+          this.showPrdResultModalWithConfidence(response.data, this.lastConfidenceData);
+        }
+    }
+  }
+
+  private showPrdResultModalWithConfidence(result: AnalysisV25Result, confidence: ConfidenceData | null): void {
+    const config = new OverlayConfig({
+      hasBackdrop: true,
+      backdropClass: 'modal-backdrop',
+      panelClass: 'modal-panel',
+      positionStrategy: this.overlay.position()
+        .global()
+        .centerHorizontally()
+        .centerVertically(),
+      scrollStrategy: this.overlay.scrollStrategies.block()
+    });
+
+    const overlayRef = this.overlay.create(config);
+    const portal = new ComponentPortal(PrdResultModalComponent);
+    const componentRef = overlayRef.attach(portal);
+
+    // Set data with confidence
+    componentRef.instance.data = {
+      result,
+      confidence: confidence || undefined
+    } as PrdResultModalData;
+
+    // Set close function
+    componentRef.instance.close = () => {
+      overlayRef.dispose();
+      this.prdService.reset();
+      this.resetV25State();
+    };
+
+    // Close on backdrop click
+    overlayRef.backdropClick().subscribe(() => {
+      overlayRef.dispose();
+      this.prdService.reset();
+      this.resetV25State();
+    });
+
+    // Close on escape key
+    overlayRef.keydownEvents().subscribe(event => {
+      if (event.key === 'Escape') {
+        overlayRef.dispose();
+        this.prdService.reset();
+        this.resetV25State();
+      }
+    });
+  }
+
+  private resetV25State(): void {
+    this.currentResumeToken = null;
+    this.currentSearchEvent = null;
+    this.lastConfidenceData = null;
   }
 }

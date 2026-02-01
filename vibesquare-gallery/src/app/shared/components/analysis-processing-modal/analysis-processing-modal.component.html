@@ -10,10 +10,27 @@
                 <!-- Spinning ring -->
                 <div class="absolute inset-0 rounded-full border-2 border-secondary/30 border-t-secondary animate-spin"></div>
             </div>
-            <div>
+            <div class="flex-1">
                 <h3 class="text-lg font-display font-bold text-white">Generating PRD</h3>
                 <p class="text-sm text-gray-400">{{ currentStepLabel }}</p>
             </div>
+
+            <!-- Cache Status Badge -->
+            @if (cacheBadgeInfo; as badge) {
+                <div class="flex items-center gap-2 px-3 py-1.5 rounded-full border {{ badge.colorClass }}"
+                    [title]="badge.tooltipText">
+                    <span class="text-base">{{ badge.icon }}</span>
+                    <span class="text-xs font-medium">{{ badge.label }}</span>
+                </div>
+            }
+
+            <!-- Overall Confidence Badge (when available) -->
+            @if (overallConfidence() > 0) {
+                <app-confidence-badge
+                    [score]="overallConfidence()"
+                    size="sm"
+                    [showLabel]="false" />
+            }
         </div>
     </div>
 
@@ -86,22 +103,56 @@
                         {{ step.description }}
                     </p>
                 </div>
+
+                <!-- Confidence Score for completed agents -->
+                @if (isStepComplete(i) && step.agentName) {
+                    @if (getAgentConfidence(step.agentName); as agentConf) {
+                        <app-confidence-badge
+                            [score]="agentConf.score"
+                            size="sm"
+                            [showLabel]="false" />
+                    }
+                }
             </div>
             }
         </div>
 
-        <!-- Estimated Time -->
+        <!-- Time Info -->
         <div class="mt-5 pt-4 border-t border-dark-border">
-            <div class="flex items-center justify-between text-sm">
+            <div class="flex items-center justify-between text-sm mb-2">
                 <div class="flex items-center gap-2 text-gray-400">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span>Estimated time</span>
+                    <span>Elapsed</span>
                 </div>
-                <span class="text-white font-medium">{{ estimatedTime }}</span>
+                <span class="text-white font-medium">{{ formattedElapsedTime }}</span>
             </div>
+            <div class="flex items-center justify-between text-sm">
+                <div class="flex items-center gap-2 text-gray-400">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M13 10V3L4 14h7v7l9-11h-7z" />
+                    </svg>
+                    <span>Estimated</span>
+                </div>
+                <span class="text-gray-400">{{ estimatedTime }}</span>
+            </div>
+
+            <!-- SSE Connection Status (for debugging) -->
+            @if (sseConnectionState() === 'reconnecting') {
+                <div class="mt-3 flex items-center gap-2 text-yellow-400 text-xs">
+                    <div class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
+                    <span>Reconnecting to server...</span>
+                </div>
+            }
+            @if (sseConnectionState() === 'error') {
+                <div class="mt-3 flex items-center gap-2 text-red-400 text-xs">
+                    <div class="w-2 h-2 rounded-full bg-red-400"></div>
+                    <span>Connection issue - using fallback mode</span>
+                </div>
+            }
         </div>
     </div>
 

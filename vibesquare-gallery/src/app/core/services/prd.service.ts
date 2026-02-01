@@ -12,7 +12,17 @@ import {
     PrdListItem,
     PrdDetail,
     PrdPaginationMeta,
-    DetailLevel
+    DetailLevel,
+    // V2.5 Confidence & Clarification types
+    ConfidenceData,
+    AnalysisStatus,
+    ClarificationQuestion,
+    ClarificationResponse,
+    FallbackRequest,
+    AgentConfidence,
+    ClarifyRequest,
+    ApproveFallbackRequest,
+    AnalysisV25StreamResponse
 } from '../models/prd.model';
 import { QuotaService } from './quota.service';
 import { ApiService } from '../api.service';
@@ -38,6 +48,19 @@ export class PrdService {
     private selectedPrdSignal = signal<PrdDetail | null>(null);
     private loadingSignal = signal<boolean>(false);
 
+    // V2.5 Confidence & Pipeline state signals
+    private analysisStatusSignal = signal<AnalysisStatus>('idle');
+    private confidenceSignal = signal<ConfidenceData | null>(null);
+    private currentAgentSignal = signal<string | null>(null);
+    private completedAgentsSignal = signal<AgentConfidence[]>([]);
+    private clarificationQuestionsSignal = signal<ClarificationQuestion[]>([]);
+    private fallbackRequestSignal = signal<FallbackRequest | null>(null);
+    private resumeTokenSignal = signal<string | null>(null);
+    private jobIdSignal = signal<string | null>(null);
+
+    // Cache status signal
+    private cacheStatusSignal = signal<{cached: boolean; cachedAt?: Date} | null>(null);
+
     // Progress simulation interval reference
     private progressInterval: ReturnType<typeof setInterval> | null = null;
 
@@ -51,10 +74,28 @@ export class PrdService {
     readonly selectedPrd = this.selectedPrdSignal.asReadonly();
     readonly loading = this.loadingSignal.asReadonly();
 
+    // V2.5 Public readonly signals
+    readonly analysisStatus = this.analysisStatusSignal.asReadonly();
+    readonly confidence = this.confidenceSignal.asReadonly();
+    readonly currentAgent = this.currentAgentSignal.asReadonly();
+    readonly completedAgents = this.completedAgentsSignal.asReadonly();
+    readonly clarificationQuestions = this.clarificationQuestionsSignal.asReadonly();
+    readonly fallbackRequest = this.fallbackRequestSignal.asReadonly();
+    readonly resumeToken = this.resumeTokenSignal.asReadonly();
+    readonly jobId = this.jobIdSignal.asReadonly();
+    readonly cacheStatus = this.cacheStatusSignal.asReadonly();
+
     // Computed signals
     readonly isAnalyzing = computed(() => this.stateSignal() === 'analyzing');
     readonly hasResult = computed(() => this.currentResultSignal() !== null);
     readonly hasPrds = computed(() => this.prdListSignal().length > 0);
+
+    // V2.5 Computed signals
+    readonly needsClarification = computed(() => this.analysisStatusSignal() === 'needs_clarification');
+    readonly needsFallbackApproval = computed(() => this.analysisStatusSignal() === 'fallback_required');
+    readonly overallConfidenceScore = computed(() => this.confidenceSignal()?.overallScore ?? 0);
+    readonly hasLowConfidence = computed(() => this.overallConfidenceScore() < 70);
+    readonly isCachedResult = computed(() => this.cacheStatusSignal()?.cached ?? false);
 
     /**
      * POST /api/analyze/v2.5 - Execute V2.5 analysis
@@ -75,6 +116,15 @@ export class PrdService {
                     this.currentResultSignal.set(response.data);
                     this.stateSignal.set('completed');
                     this.progressSignal.set(100);
+
+                    // Extract and save cache metadata
+                    if (response.data.metadata) {
+                        this.cacheStatusSignal.set({
+                            cached: response.data.metadata.cached ?? false,
+                            cachedAt: response.data.metadata.cachedAt
+                        });
+                    }
+
                     // Refresh quota after successful analysis
                     this.quotaService.refreshQuota();
                 }
@@ -160,6 +210,193 @@ export class PrdService {
         });
     }
 
+    // ============================================
+    // V2.5 Clarification & Fallback Methods
+    // ============================================
+
+    /**
+     * POST /api/analyze/v25/clarify - Submit clarification responses
+     */
+    submitClarifications(clarifications: ClarificationResponse[]): Observable<AnalysisV25StreamResponse> {
+        const token = this.resumeTokenSignal();
+        if (!token) {
+            return throwError(() => new Error('No resume token available'));
+        }
+
+        this.analysisStatusSignal.set('running');
+        this.clarificationQuestionsSignal.set([]);
+
+        const request: ClarifyRequest = {
+            resumeToken: token,
+            clarifications
+        };
+
+        return this.apiService.post<AnalysisV25StreamResponse>('analyze/v25/clarify', request).pipe(
+            tap(response => this.handleStreamResponse(response)),
+            catchError((error: HttpErrorResponse) => {
+                this.analysisStatusSignal.set('error');
+                this.errorSignal.set(this.extractErrorMessage(error));
+                return throwError(() => error);
+            })
+        );
+    }
+
+    /**
+     * POST /api/analyze/v25/approve-fallback - Approve or decline model fallback
+     */
+    approveFallback(approved: boolean, targetModel?: string): Observable<AnalysisV25StreamResponse> {
+        const token = this.resumeTokenSignal();
+        if (!token) {
+            return throwError(() => new Error('No resume token available'));
+        }
+
+        this.analysisStatusSignal.set('running');
+        this.fallbackRequestSignal.set(null);
+
+        const request: ApproveFallbackRequest = {
+            resumeToken: token,
+            approved,
+            targetModel
+        };
+
+        return this.apiService.post<AnalysisV25StreamResponse>('analyze/v25/approve-fallback', request).pipe(
+            tap(response => this.handleStreamResponse(response)),
+            catchError((error: HttpErrorResponse) => {
+                this.analysisStatusSignal.set('error');
+                this.errorSignal.set(this.extractErrorMessage(error));
+                return throwError(() => error);
+            })
+        );
+    }
+
+    /**
+     * Handle V2.5 stream response and update signals accordingly
+     */
+    private handleStreamResponse(response: AnalysisV25StreamResponse): void {
+        this.analysisStatusSignal.set(response.status);
+        this.jobIdSignal.set(response.jobId);
+
+        if (response.resumeToken) {
+            this.resumeTokenSignal.set(response.resumeToken);
+            // Save to localStorage for resume capability
+            this.savePendingAnalysis(response.resumeToken);
+        }
+
+        if (response.confidence) {
+            this.confidenceSignal.set(response.confidence);
+        }
+
+        if (response.questionsForUser && response.questionsForUser.length > 0) {
+            this.clarificationQuestionsSignal.set(response.questionsForUser);
+        }
+
+        if (response.fallbackRequest) {
+            this.fallbackRequestSignal.set(response.fallbackRequest);
+        }
+
+        if (response.status === 'completed' && response.result) {
+            this.currentResultSignal.set(response.result);
+            this.stateSignal.set('completed');
+            this.progressSignal.set(100);
+            this.clearPendingAnalysis();
+            this.quotaService.refreshQuota();
+        }
+
+        if (response.status === 'error') {
+            this.stateSignal.set('error');
+            this.errorSignal.set(response.error || 'An error occurred');
+            this.clearPendingAnalysis();
+        }
+    }
+
+    /**
+     * Update confidence data (used by SSE service)
+     */
+    updateConfidence(confidence: Partial<ConfidenceData>): void {
+        const current = this.confidenceSignal();
+        if (current) {
+            this.confidenceSignal.set({ ...current, ...confidence });
+        } else {
+            this.confidenceSignal.set(confidence as ConfidenceData);
+        }
+    }
+
+    /**
+     * Update current agent (used by SSE service)
+     */
+    updateCurrentAgent(agentName: string | null): void {
+        this.currentAgentSignal.set(agentName);
+    }
+
+    /**
+     * Add completed agent (used by SSE service)
+     */
+    addCompletedAgent(agent: AgentConfidence): void {
+        this.completedAgentsSignal.update(agents => [...agents, agent]);
+    }
+
+    /**
+     * Set clarification questions (used by SSE service)
+     */
+    setClarificationQuestions(questions: ClarificationQuestion[]): void {
+        this.clarificationQuestionsSignal.set(questions);
+        this.analysisStatusSignal.set('needs_clarification');
+    }
+
+    /**
+     * Set fallback request (used by SSE service)
+     */
+    setFallbackRequest(request: FallbackRequest): void {
+        this.fallbackRequestSignal.set(request);
+        this.analysisStatusSignal.set('fallback_required');
+    }
+
+    /**
+     * Save pending analysis to localStorage for resume
+     */
+    private savePendingAnalysis(resumeToken: string): void {
+        try {
+            localStorage.setItem('pendingAnalysis', JSON.stringify({
+                resumeToken,
+                jobId: this.jobIdSignal(),
+                timestamp: Date.now()
+            }));
+        } catch (e) {
+            console.warn('Failed to save pending analysis to localStorage', e);
+        }
+    }
+
+    /**
+     * Clear pending analysis from localStorage
+     */
+    private clearPendingAnalysis(): void {
+        try {
+            localStorage.removeItem('pendingAnalysis');
+        } catch (e) {
+            console.warn('Failed to clear pending analysis from localStorage', e);
+        }
+    }
+
+    /**
+     * Check for and restore pending analysis
+     */
+    checkPendingAnalysis(): { resumeToken: string; jobId: string; timestamp: number } | null {
+        try {
+            const saved = localStorage.getItem('pendingAnalysis');
+            if (saved) {
+                const data = JSON.parse(saved);
+                // Only restore if less than 30 minutes old
+                if (Date.now() - data.timestamp < 30 * 60 * 1000) {
+                    return data;
+                }
+                this.clearPendingAnalysis();
+            }
+        } catch (e) {
+            console.warn('Failed to check pending analysis', e);
+        }
+        return null;
+    }
+
     /**
      * Reset analysis state for new analysis
      */
@@ -169,6 +406,19 @@ export class PrdService {
         this.currentResultSignal.set(null);
         this.errorSignal.set(null);
         this.progressSignal.set(0);
+
+        // Reset cache status
+        this.cacheStatusSignal.set(null);
+
+        // Reset V2.5 state
+        this.analysisStatusSignal.set('idle');
+        this.confidenceSignal.set(null);
+        this.currentAgentSignal.set(null);
+        this.completedAgentsSignal.set([]);
+        this.clarificationQuestionsSignal.set([]);
+        this.fallbackRequestSignal.set(null);
+        this.resumeTokenSignal.set(null);
+        this.jobIdSignal.set(null);
     }
 
     /**

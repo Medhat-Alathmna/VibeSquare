@@ -63,6 +63,17 @@
             <span class="px-2 py-1 bg-purple-500/10 text-purple-400 text-xs font-medium rounded">{{ detailLevelLabel }}</span>
         </div>
 
+        <!-- Cache Status Info -->
+        @if (cacheBadgeInfo; as badge) {
+            <div class="flex items-center gap-2 p-3 mb-4 rounded-lg border {{ badge.colorClass }}">
+                <span class="text-xl">{{ badge.icon }}</span>
+                <div class="flex-1">
+                    <p class="text-sm font-medium">{{ badge.label }}</p>
+                    <p class="text-xs opacity-70">{{ badge.tooltipText }}</p>
+                </div>
+            </div>
+        }
+
         <!-- Tab Navigation -->
         <div class="flex items-center gap-1 mb-4 p-1 bg-dark-bg rounded-lg">
             <button (click)="switchTab('preview')"
@@ -72,6 +83,20 @@
                 [class.text-gray-400]="activeTab() !== 'preview'">
                 Preview
             </button>
+            @if (hasEnhancedData()) {
+                <button (click)="switchTab('analysis')"
+                    class="flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all"
+                    [class.bg-secondary/20]="activeTab() === 'analysis'"
+                    [class.text-secondary]="activeTab() === 'analysis'"
+                    [class.text-gray-400]="activeTab() !== 'analysis'">
+                    <span class="flex items-center justify-center gap-1.5">
+                        Analysis
+                        @if (confidenceData(); as conf) {
+                            <app-confidence-badge [score]="conf.overallScore" size="sm" [showLabel]="false" />
+                        }
+                    </span>
+                </button>
+            }
             <button (click)="switchTab('raw')"
                 class="flex-1 px-4 py-2 text-sm font-medium rounded-md transition-all"
                 [class.bg-secondary/20]="activeTab() === 'raw'"
@@ -83,12 +108,46 @@
 
         <!-- PRD Content -->
         <div class="prd-container">
-            @if (activeTab() === 'preview') {
-                <app-markdown-viewer [content]="prdMarkdown" maxHeight="400px"></app-markdown-viewer>
-            } @else {
-                <div class="raw-content">
-                    <pre class="whitespace-pre-wrap text-sm text-gray-300 leading-relaxed font-mono">{{ prdMarkdown }}</pre>
-                </div>
+            @switch (activeTab()) {
+                @case ('preview') {
+                    <app-markdown-viewer [content]="prdMarkdown" maxHeight="400px"></app-markdown-viewer>
+                }
+                @case ('analysis') {
+                    <div class="analysis-sections space-y-4 max-h-[400px] overflow-y-auto pr-2">
+                        <!-- Confidence Analysis -->
+                        @if (confidenceData(); as conf) {
+                            <app-confidence-analysis-section [confidence]="conf" />
+                        }
+
+                        <!-- Product Identity -->
+                        @if (productIdentityData(); as identity) {
+                            <app-product-identity-section [identity]="identity" />
+                        }
+
+                        <!-- Analytics & KPIs -->
+                        @if (analyticsData(); as analytics) {
+                            <app-analytics-section [analytics]="analytics" />
+                        }
+
+                        <!-- Roadmap Timeline -->
+                        @if (roadmapData(); as roadmap) {
+                            <app-roadmap-timeline [roadmap]="roadmap" />
+                        }
+
+                        <!-- No Enhanced Data Message -->
+                        @if (!confidenceData() && !productIdentityData() && !analyticsData() && !roadmapData()) {
+                            <div class="text-center py-8 text-gray-500">
+                                <span class="text-2xl mb-2 block">📊</span>
+                                <p>No enhanced analysis data available</p>
+                            </div>
+                        }
+                    </div>
+                }
+                @case ('raw') {
+                    <div class="raw-content">
+                        <pre class="whitespace-pre-wrap text-sm text-gray-300 leading-relaxed font-mono">{{ prdMarkdown }}</pre>
+                    </div>
+                }
             }
         </div>
     </div>
