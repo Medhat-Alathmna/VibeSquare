@@ -39,7 +39,7 @@ export class AnalysisService {
         this.errorSignal.set(null);
         this.currentEstimateSignal.set(null);
         
-        return this.apiService.post<AnalysisEstimateResponse>('gallery/analyze/estimate', { url }).pipe(
+        return this.apiService.post<AnalysisEstimateResponse>('gallery/analyze/v2.5/estimate', { url }).pipe(
             tap(response => {
                 if (response.success) {
                     this.currentEstimateSignal.set(response.data);
@@ -67,7 +67,7 @@ export class AnalysisService {
             request.options = options;
         }
 
-        return this.apiService.post<AnalysisConfirmResponse>('gallery/analyze/confirm', request).pipe(
+        return this.apiService.post<AnalysisConfirmResponse>('gallery/analyze/v2.5/confirm', request).pipe(
             tap(response => {
                 if (response.success) {
                     this.currentResultSignal.set(response.data);

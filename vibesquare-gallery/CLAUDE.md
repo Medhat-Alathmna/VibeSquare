@@ -342,4 +342,10 @@ Recent changes focus on v2.5 pipeline with confidence scoring and clarification 
 
 
 - When coding Angular if you wanna use signals use One-Way Data Binding + Event Binding (example : [ngModel]="signal()" (ngModelChange)="signal.set($event)")
--
+
+## Plan Mode / Planning Phase
+
+When the user initiates a "Plan Mode" or asks for planning/architecture design:
+
+1.  **Ask 10 Deep/Probing Questions**: You must strictly ask 10 deep, probing, or ambiguous questions to uncover hidden requirements and ambiguities. Do not proceed until these are discussed.
+2.  **Step-by-Step Execution**: Execute the agreed plan rigorously step-by-step. Do not combine multiple major steps. 

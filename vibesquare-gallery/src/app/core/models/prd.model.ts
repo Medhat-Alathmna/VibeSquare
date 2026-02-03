@@ -169,11 +169,16 @@ export interface PrdDeleteResponse {
   message?: string;
 }
 
-// PRD By URL Response
-export interface PrdByUrlResponse {
+// PRD Cache Check Response
+export interface PrdCacheCheckResponse {
   success: boolean;
   statusCode: number;
-  data: PrdListItem[];
+  data: {
+    cached: boolean;
+    id?: string;         // PRD ID if cached
+    sourceUrl?: string;  // Source URL if cached
+    createdAt?: string;  // ISO date string if cached
+  };
   message?: string;
 }
 

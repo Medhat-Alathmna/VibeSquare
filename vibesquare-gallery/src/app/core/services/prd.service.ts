@@ -8,7 +8,7 @@ import {
     PrdListResponse,
     PrdDetailResponse,
     PrdDeleteResponse,
-    PrdByUrlResponse,
+    PrdCacheCheckResponse,
     PrdListItem,
     PrdDetail,
     PrdPaginationMeta,
@@ -145,7 +145,7 @@ export class PrdService {
     getPrdList(page: number = 1, limit: number = 10): Observable<PrdListResponse> {
         this.loadingSignal.set(true);
 
-        return this.apiService.get<PrdListResponse>('prd', {
+        return this.apiService.get<PrdListResponse>('gallery/prd', {
             params: { page: page.toString(), limit: limit.toString() }
         }).pipe(
             tap(response => {
@@ -168,7 +168,7 @@ export class PrdService {
     getPrdById(id: string): Observable<PrdDetailResponse> {
         this.loadingSignal.set(true);
 
-        return this.apiService.get<PrdDetailResponse>(`prd/${id}`).pipe(
+        return this.apiService.get<PrdDetailResponse>(`gallery/prd/${id}`).pipe(
             tap(response => {
                 this.loadingSignal.set(false);
                 if (response.success || response.data) {
@@ -186,14 +186,14 @@ export class PrdService {
      * GET /api/prd/:id/download - Download PRD as markdown file
      */
     downloadPrd(id: string): Observable<Blob> {
-        return this.apiService.getFile<Blob>(`prd/${id}/download`);
+        return this.apiService.getFile<Blob>(`gallery/prd/${id}/download`);
     }
 
     /**
      * DELETE /api/prd/:id - Delete PRD
      */
     deletePrd(id: string): Observable<PrdDeleteResponse> {
-        return this.apiService.delete<PrdDeleteResponse>(`prd/${id}`).pipe(
+        return this.apiService.delete<PrdDeleteResponse>(`gallery/prd/${id}`).pipe(
             tap(() => {
                 // Remove from local list
                 this.prdListSignal.update(prds => prds.filter(p => p.id !== id));
@@ -202,10 +202,10 @@ export class PrdService {
     }
 
     /**
-     * GET /api/prd/by-url - Search PRDs by URL
+     * GET /api/gallery/prd/check-cache - Check if PRD is cached for URL
      */
-    searchPrdByUrl(url: string): Observable<PrdByUrlResponse> {
-        return this.apiService.get<PrdByUrlResponse>('prd/by-url', {
+    checkCache(url: string): Observable<PrdCacheCheckResponse> {
+        return this.apiService.get<PrdCacheCheckResponse>('gallery/prd/check-cache', {
             params: { url }
         });
     }

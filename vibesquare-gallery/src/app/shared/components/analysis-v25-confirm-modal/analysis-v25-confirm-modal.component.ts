@@ -95,18 +95,11 @@ export class AnalysisV25ConfirmModalComponent implements OnInit {
     }
 
     private checkCachedResult(url: string): void {
-        this.prdService.searchPrdByUrl(url).subscribe({
+        this.prdService.checkCache(url).subscribe({
             next: (response) => {
-                // Check if there's a recent cached result (within 7 days)
-                if (response.success && response.data && response.data.length > 0) {
-                    const latestPrd = response.data[0];
-                    const createdAt = new Date(latestPrd.createdAt);
-                    const daysSinceCreation = (Date.now() - createdAt.getTime()) / (1000 * 60 * 60 * 24);
-
-                    // If within cache TTL (7 days)
-                    if (daysSinceCreation <= 7) {
-                        this.cachedResultAvailable.set(true);
-                    }
+                // Backend validates cache TTL and returns cache status
+                if (response.success && response.data) {
+                    this.cachedResultAvailable.set(response.data.cached);
                 }
             },
             error: (err) => {

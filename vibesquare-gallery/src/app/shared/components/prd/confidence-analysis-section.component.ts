@@ -13,7 +13,7 @@ import { AgentConfidenceCardComponent } from '../agent-confidence-card/agent-con
 @Component({
     selector: 'app-confidence-analysis-section',
     standalone: true,
-    imports: [CommonModule, ConfidenceBadgeComponent, AgentConfidenceCardComponent],
+    imports: [CommonModule, ConfidenceBadgeComponent],
     template: `
         <div class="bg-dark-surface border border-dark-border rounded-xl p-5">
             <!-- Header -->

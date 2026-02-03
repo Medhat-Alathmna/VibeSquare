@@ -2,6 +2,7 @@ import { Injectable, signal, inject } from '@angular/core';
 import { Observable, tap, catchError, throwError } from 'rxjs';
 import { HttpErrorResponse } from '@angular/common/http';
 import { ApiService } from '../api.service';
+import { PrdService } from './prd.service';
 import {
   AnalysisHistoryItem,
   IGalleryAnalysis,
@@ -25,6 +26,7 @@ import {
 })
 export class HistoryService {
   private apiService = inject(ApiService);
+  private prdService = inject(PrdService);
 
   // State signals - Analysis History
   private historySignal = signal<PaginatedResult<AnalysisHistoryItem> | null>(null);
@@ -150,17 +152,12 @@ export class HistoryService {
   // ============ PRD History Methods ============
 
   /**
-   * GET /api/prd - Get paginated PRD list
+   * GET /api/prd - Get paginated PRD list (delegates to PrdService)
    */
   getPrdHistory(page: number = 1, limit: number = 10): Observable<PrdListResponse> {
     this.prdLoadingSignal.set(true);
 
-    return this.apiService.get<PrdListResponse>('api/prd', {
-      params: {
-        page: page.toString(),
-        limit: limit.toString()
-      }
-    }).pipe(
+    return this.prdService.getPrdList(page, limit).pipe(
       tap(response => {
         this.prdLoadingSignal.set(false);
         if (response.success || response.data) {
@@ -177,12 +174,12 @@ export class HistoryService {
   }
 
   /**
-   * GET /api/prd/:id - Get PRD by ID
+   * GET /api/prd/:id - Get PRD by ID (delegates to PrdService)
    */
   getPrdById(id: string): Observable<PrdDetailResponse> {
     this.prdLoadingSignal.set(true);
 
-    return this.apiService.get<PrdDetailResponse>(`api/prd/${id}`).pipe(
+    return this.prdService.getPrdById(id).pipe(
       tap(response => {
         this.prdLoadingSignal.set(false);
         if (response.success || response.data) {
@@ -198,19 +195,19 @@ export class HistoryService {
   }
 
   /**
-   * GET /api/prd/:id/download - Download PRD as markdown
+   * GET /api/prd/:id/download - Download PRD as markdown (delegates to PrdService)
    */
   downloadPrd(id: string): Observable<Blob> {
-    return this.apiService.getFile<Blob>(`api/prd/${id}/download`);
+    return this.prdService.downloadPrd(id);
   }
 
   /**
-   * DELETE /api/prd/:id - Delete PRD
+   * DELETE /api/prd/:id - Delete PRD (delegates to PrdService)
    */
   deletePrd(id: string): Observable<PrdDeleteResponse> {
-    return this.apiService.delete<PrdDeleteResponse>(`api/prd/${id}`).pipe(
+    return this.prdService.deletePrd(id).pipe(
       tap(() => {
-        // Remove from local list
+        // Sync local state with PrdService's state update
         this.prdListSignal.update(prds => prds.filter(p => p.id !== id));
         // Update pagination count
         const pagination = this.prdPaginationSignal();
