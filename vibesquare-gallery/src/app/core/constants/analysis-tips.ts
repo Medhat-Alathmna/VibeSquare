@@ -4,18 +4,18 @@
  */
 
 export const ANALYSIS_TIPS = [
-  '💡 يمكنك تحميل PRD بصيغة Markdown للمشاركة مع فريقك',
-  '🎯 استخدم detail level "Comprehensive" للمشاريع الكبيرة',
-  '⚡ النتائج المخزنة مؤقتاً تظهر فوراً لتوفير الوقت',
-  '📊 تحقق من confidence scores لمعرفة جودة التحليل',
-  '🔍 النوع "Both" يعطي أكمل تحليل لواجهة وخلفية التطبيق',
-  '💾 يمكنك الوصول لجميع تحليلاتك السابقة من صفحة History',
-  '🎨 Visual pipeline مثالي لمشاريع التصميم والواجهات',
-  '🏗️ Technical pipeline يركز على Architecture والبنية التقنية',
-  '✨ نظام QA المدمج يراجع جودة المواصفات تلقائياً',
-  '📝 يمكنك نسخ أجزاء محددة من PRD مباشرة',
-  '🚀 التحليل الشامل يوفر وقت فريقك في مرحلة التخطيط',
-  '🔐 جميع تحليلاتك محفوظة بشكل آمن في حسابك'
+  'You can download the PRD as Markdown to share with your team',
+  'Use detail level "Comprehensive" for large-scale projects',
+  'Cached results appear instantly to save you time',
+  'Check confidence scores to gauge the quality of the analysis',
+  'The "Both" type provides the most complete frontend and backend analysis',
+  'You can access all your previous analyses from the History page',
+  'Visual pipeline is ideal for design and interface projects',
+  'Technical pipeline focuses on architecture and technical structure',
+  'The built-in QA system automatically reviews specification quality',
+  'You can copy specific sections of the PRD directly',
+  'Comprehensive analysis saves your team time in the planning phase',
+  'All your analyses are securely stored in your account'
 ];
 
 /**

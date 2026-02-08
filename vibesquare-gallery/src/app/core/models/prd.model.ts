@@ -62,6 +62,9 @@ export const DETAIL_LEVEL_OPTIONS: DetailLevelOption[] = [
   }
 ];
 
+// API Style options
+export type ApiStyle = 'REST' | 'GraphQL' | 'REST_GraphQL';
+
 // V2.5 Analysis Request
 export interface AnalysisV25Request {
   url: string;
@@ -69,7 +72,77 @@ export interface AnalysisV25Request {
   detailLevel: DetailLevel;
   tier?: 'free' | 'basic' | 'pro' | 'enterprise';
   includeDebug?: boolean;
+  apiStyle?: ApiStyle;
+  clarificationResponses?: PreflightClarificationResponse[];
+  forceRefresh?: boolean;
 }
+
+// ============================================
+// V2.5 Preflight Types
+// ============================================
+
+export interface PreflightRequest {
+  url: string;
+  tier?: string;
+  forceRefresh?: boolean;
+}
+
+export interface PreflightQuestionOption {
+  value: string;
+  label: string;
+  description?: string;
+  isRecommended?: boolean;
+  recommendationReason?: string;
+}
+
+export interface PreflightQuestion {
+  id: string;
+  question: string;
+  context: string;
+  agentName: string;
+  allowMultiple: boolean;
+  allowCustom: boolean;
+  priority: 'critical' | 'important' | 'optional';
+  options: PreflightQuestionOption[];
+}
+
+export interface PreflightVisualSummary {
+  componentsDetected: string[];
+  hasAuth: boolean;
+  hasEcommerce: boolean;
+  hasDashboard: boolean;
+  hasSocial: boolean;
+  hasContent: boolean;
+  layoutType: string;
+  sourceUrl: string;
+}
+
+export interface PreflightMetadata {
+  sourceUrl: string;
+  processingTimeMs: number;
+  cached: boolean;
+}
+
+export interface PreflightData {
+  questions: PreflightQuestion[];
+  visualSummary: PreflightVisualSummary;
+  metadata: PreflightMetadata;
+}
+
+export interface PreflightResponse {
+  success: boolean;
+  statusCode?: number;
+  data: PreflightData;
+  message?: string;
+}
+
+export interface PreflightClarificationResponse {
+  questionId: string;
+  selectedValues: string[];
+  customAnswer?: string;
+}
+
+export type PreflightState = 'idle' | 'loading' | 'completed' | 'error';
 
 // V2.5 PRD Metadata
 export interface PrdMetadata {
@@ -262,25 +335,8 @@ export type AnalysisStatus =
   | 'idle'
   | 'running'
   | 'completed'
-  | 'needs_clarification'
   | 'fallback_required'
   | 'error';
-
-// Clarification question from backend
-export interface ClarificationQuestion {
-  id: string;
-  question: string;
-  context: string;
-  agentName: string;
-  options?: string[];
-  priority: 'critical' | 'important' | 'optional';
-}
-
-// User's response to clarification question
-export interface ClarificationResponse {
-  questionId: string;
-  answer: string;
-}
 
 // Model fallback request from backend
 export interface FallbackRequest {
@@ -297,12 +353,11 @@ export interface FallbackRequest {
 
 // Pipeline update event (for SSE streaming)
 export interface PipelineUpdate {
-  type: 'agent_started' | 'agent_completed' | 'confidence_update' | 'needs_clarification' | 'fallback_required' | 'completed' | 'error';
+  type: 'agent_started' | 'agent_completed' | 'confidence_update' | 'fallback_required' | 'completed' | 'error';
   agentName?: string;
   progress?: number;
   confidence?: Partial<ConfidenceData>;
   agentConfidence?: AgentConfidence;
-  questions?: ClarificationQuestion[];
   fallbackRequest?: FallbackRequest;
   resumeToken?: string;
   result?: AnalysisV25Result;
@@ -315,17 +370,10 @@ export interface AnalysisV25StreamResponse {
   status: AnalysisStatus;
   jobId: string;
   confidence?: ConfidenceData;
-  questionsForUser?: ClarificationQuestion[];
   fallbackRequest?: FallbackRequest;
   resumeToken?: string;
   result?: AnalysisV25Result;
   error?: string;
-}
-
-// Clarify request body
-export interface ClarifyRequest {
-  resumeToken: string;
-  clarifications: ClarificationResponse[];
 }
 
 // Approve fallback request body

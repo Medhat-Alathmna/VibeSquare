@@ -106,15 +106,6 @@ export class SseService implements OnDestroy {
                         }
                     });
 
-                    this.eventSource.addEventListener('needs_clarification', (event: MessageEvent) => {
-                        const update = this.parseEvent(event, 'needs_clarification');
-                        if (update) {
-                            observer.next(update);
-                            this.updateSubject.next(update);
-                            // Don't close - wait for user input
-                        }
-                    });
-
                     this.eventSource.addEventListener('fallback_required', (event: MessageEvent) => {
                         const update = this.parseEvent(event, 'fallback_required');
                         if (update) {
@@ -184,12 +175,6 @@ export class SseService implements OnDestroy {
             case 'confidence_update':
                 if (update.confidence) {
                     this.prdService.updateConfidence(update.confidence);
-                }
-                break;
-
-            case 'needs_clarification':
-                if (update.questions) {
-                    this.prdService.setClarificationQuestions(update.questions);
                 }
                 break;
 

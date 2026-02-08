@@ -14,8 +14,8 @@
             </div>
 
             <div class="flex-1">
-                <h3 class="text-lg font-display font-bold text-white">جاري التحليل...</h3>
-                <p class="text-sm text-gray-400">قد يستغرق هذا بضع لحظات</p>
+                <h3 class="text-lg font-display font-bold text-white">Analyzing...</h3>
+                <p class="text-sm text-gray-400">This may take a few moments</p>
             </div>
 
             <!-- Cache Status Badge -->
@@ -53,7 +53,7 @@
                                 {{ meta.title || data.url }}
                             </h4>
                             <p class="text-xs text-gray-400 line-clamp-2">
-                                {{ meta.description || 'جاري استخراج معلومات الموقع...' }}
+                                {{ meta.description || 'Extracting site information...' }}
                             </p>
                         </div>
                     </div>
@@ -64,7 +64,7 @@
         <!-- Enhanced Progress Bar -->
         <div class="mb-6">
             <div class="flex items-center justify-between mb-2">
-                <span class="text-sm text-gray-400">التقدم</span>
+                <span class="text-sm text-gray-400">Progress</span>
                 <span class="text-sm font-medium text-secondary">{{ progress() }}%</span>
             </div>
 
@@ -80,7 +80,7 @@
             <div class="flex items-start gap-3">
                 <span class="text-2xl tip-icon">💡</span>
                 <div class="flex-1">
-                    <h4 class="text-xs font-medium text-gray-400 mb-1">نصيحة</h4>
+                    <h4 class="text-xs font-medium text-gray-400 mb-1">Tip</h4>
                     <p class="text-sm text-white tip-text">{{ currentTip() }}</p>
                 </div>
             </div>
@@ -94,7 +94,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <span>الوقت المنقضي</span>
+                    <span>Elapsed Time</span>
                 </div>
                 <span class="text-white font-medium">{{ formattedElapsedTime }}</span>
             </div>
@@ -104,7 +104,7 @@
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                             d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
-                    <span>الوقت المتوقع</span>
+                    <span>Estimated Time</span>
                 </div>
                 <span class="text-gray-400">{{ estimatedTime }}</span>
             </div>
@@ -113,13 +113,13 @@
             @if (sseConnectionState() === 'reconnecting') {
                 <div class="mt-3 flex items-center gap-2 text-yellow-400 text-xs">
                     <div class="w-2 h-2 rounded-full bg-yellow-400 animate-pulse"></div>
-                    <span>إعادة الاتصال بالخادم...</span>
+                    <span>Reconnecting to server...</span>
                 </div>
             }
             @if (sseConnectionState() === 'error') {
                 <div class="mt-3 flex items-center gap-2 text-red-400 text-xs">
                     <div class="w-2 h-2 rounded-full bg-red-400"></div>
-                    <span>مشكلة في الاتصال - استخدام الوضع الاحتياطي</span>
+                    <span>Connection issue - using fallback mode</span>
                 </div>
             }
         </div>
@@ -130,18 +130,18 @@
         @if (!showCancelConfirm()) {
         <button (click)="onCancelClick()"
             class="px-4 py-2 text-sm font-medium text-gray-400 hover:text-red-400 transition-colors rounded-lg hover:bg-red-500/10">
-            إلغاء
+            Cancel
         </button>
         } @else {
         <div class="flex items-center gap-3 w-full">
-            <span class="text-sm text-gray-400 flex-1">إلغاء إنشاء PRD؟</span>
+            <span class="text-sm text-gray-400 flex-1">Cancel PRD generation?</span>
             <button (click)="onDismissCancel()"
                 class="px-3 py-1.5 text-sm font-medium text-gray-400 hover:text-white transition-colors rounded-lg hover:bg-dark-border/50">
-                لا
+                No
             </button>
             <button (click)="onConfirmCancel()"
                 class="px-3 py-1.5 text-sm font-medium text-red-400 hover:text-red-300 transition-colors rounded-lg bg-red-500/10 hover:bg-red-500/20">
-                نعم، إلغاء
+                Yes, cancel
             </button>
         </div>
         }

@@ -1,7 +1,7 @@
 <div class="explore-page">
   <!-- Hero Search Section -->
   <app-hero-search
-    [externalLoading]="isEstimating() || isAnalyzing() === 'analyzing'"
+    [externalLoading]="isEstimating() || isPreflighting() || isAnalyzing() === 'analyzing'"
     (search)="onHeroSearch($event)">
   </app-hero-search>
 

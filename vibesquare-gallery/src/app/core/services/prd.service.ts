@@ -13,16 +13,18 @@ import {
     PrdDetail,
     PrdPaginationMeta,
     DetailLevel,
-    // V2.5 Confidence & Clarification types
+    // V2.5 Confidence & Fallback types
     ConfidenceData,
     AnalysisStatus,
-    ClarificationQuestion,
-    ClarificationResponse,
     FallbackRequest,
     AgentConfidence,
-    ClarifyRequest,
     ApproveFallbackRequest,
-    AnalysisV25StreamResponse
+    AnalysisV25StreamResponse,
+    // V2.5 Preflight types
+    PreflightRequest,
+    PreflightResponse,
+    PreflightData,
+    PreflightState
 } from '../models/prd.model';
 import { QuotaService } from './quota.service';
 import { ApiService } from '../api.service';
@@ -53,10 +55,13 @@ export class PrdService {
     private confidenceSignal = signal<ConfidenceData | null>(null);
     private currentAgentSignal = signal<string | null>(null);
     private completedAgentsSignal = signal<AgentConfidence[]>([]);
-    private clarificationQuestionsSignal = signal<ClarificationQuestion[]>([]);
     private fallbackRequestSignal = signal<FallbackRequest | null>(null);
     private resumeTokenSignal = signal<string | null>(null);
     private jobIdSignal = signal<string | null>(null);
+
+    // V2.5 Preflight state signals
+    private preflightStateSignal = signal<PreflightState>('idle');
+    private preflightDataSignal = signal<PreflightData | null>(null);
 
     // Cache status signal
     private cacheStatusSignal = signal<{cached: boolean; cachedAt?: Date} | null>(null);
@@ -79,11 +84,17 @@ export class PrdService {
     readonly confidence = this.confidenceSignal.asReadonly();
     readonly currentAgent = this.currentAgentSignal.asReadonly();
     readonly completedAgents = this.completedAgentsSignal.asReadonly();
-    readonly clarificationQuestions = this.clarificationQuestionsSignal.asReadonly();
     readonly fallbackRequest = this.fallbackRequestSignal.asReadonly();
     readonly resumeToken = this.resumeTokenSignal.asReadonly();
     readonly jobId = this.jobIdSignal.asReadonly();
     readonly cacheStatus = this.cacheStatusSignal.asReadonly();
+
+    // V2.5 Preflight public readonly signals
+    readonly preflightState = this.preflightStateSignal.asReadonly();
+    readonly preflightData = this.preflightDataSignal.asReadonly();
+    readonly preflightQuestions = computed(() => this.preflightDataSignal()?.questions ?? []);
+    readonly preflightVisualSummary = computed(() => this.preflightDataSignal()?.visualSummary ?? null);
+    readonly isPreflightLoading = computed(() => this.preflightStateSignal() === 'loading');
 
     // Computed signals
     readonly isAnalyzing = computed(() => this.stateSignal() === 'analyzing');
@@ -91,7 +102,6 @@ export class PrdService {
     readonly hasPrds = computed(() => this.prdListSignal().length > 0);
 
     // V2.5 Computed signals
-    readonly needsClarification = computed(() => this.analysisStatusSignal() === 'needs_clarification');
     readonly needsFallbackApproval = computed(() => this.analysisStatusSignal() === 'fallback_required');
     readonly overallConfidenceScore = computed(() => this.confidenceSignal()?.overallScore ?? 0);
     readonly hasLowConfidence = computed(() => this.overallConfidenceScore() < 70);
@@ -211,31 +221,25 @@ export class PrdService {
     }
 
     // ============================================
-    // V2.5 Clarification & Fallback Methods
+    // V2.5 Preflight & Fallback Methods
     // ============================================
 
     /**
-     * POST /api/analyze/v25/clarify - Submit clarification responses
+     * POST /api/analyze/v2.5/preflight - Execute preflight visual analysis
      */
-    submitClarifications(clarifications: ClarificationResponse[]): Observable<AnalysisV25StreamResponse> {
-        const token = this.resumeTokenSignal();
-        if (!token) {
-            return throwError(() => new Error('No resume token available'));
-        }
-
-        this.analysisStatusSignal.set('running');
-        this.clarificationQuestionsSignal.set([]);
-
-        const request: ClarifyRequest = {
-            resumeToken: token,
-            clarifications
-        };
-
-        return this.apiService.post<AnalysisV25StreamResponse>('analyze/v25/clarify', request).pipe(
-            tap(response => this.handleStreamResponse(response)),
+    preflight(url: string, forceRefresh = false): Observable<PreflightResponse> {
+        this.preflightStateSignal.set('loading');
+        this.preflightDataSignal.set(null);
+        const request: PreflightRequest = { url, forceRefresh };
+        return this.apiService.post<PreflightResponse>('analyze/v2.5/preflight', request).pipe(
+            tap(response => {
+                if (response.success || response.data) {
+                    this.preflightDataSignal.set(response.data);
+                    this.preflightStateSignal.set('completed');
+                }
+            }),
             catchError((error: HttpErrorResponse) => {
-                this.analysisStatusSignal.set('error');
-                this.errorSignal.set(this.extractErrorMessage(error));
+                this.preflightStateSignal.set('error');
                 return throwError(() => error);
             })
         );
@@ -286,10 +290,6 @@ export class PrdService {
             this.confidenceSignal.set(response.confidence);
         }
 
-        if (response.questionsForUser && response.questionsForUser.length > 0) {
-            this.clarificationQuestionsSignal.set(response.questionsForUser);
-        }
-
         if (response.fallbackRequest) {
             this.fallbackRequestSignal.set(response.fallbackRequest);
         }
@@ -333,14 +333,6 @@ export class PrdService {
      */
     addCompletedAgent(agent: AgentConfidence): void {
         this.completedAgentsSignal.update(agents => [...agents, agent]);
-    }
-
-    /**
-     * Set clarification questions (used by SSE service)
-     */
-    setClarificationQuestions(questions: ClarificationQuestion[]): void {
-        this.clarificationQuestionsSignal.set(questions);
-        this.analysisStatusSignal.set('needs_clarification');
     }
 
     /**
@@ -415,10 +407,13 @@ export class PrdService {
         this.confidenceSignal.set(null);
         this.currentAgentSignal.set(null);
         this.completedAgentsSignal.set([]);
-        this.clarificationQuestionsSignal.set([]);
         this.fallbackRequestSignal.set(null);
         this.resumeTokenSignal.set(null);
         this.jobIdSignal.set(null);
+
+        // Reset preflight state
+        this.preflightStateSignal.set('idle');
+        this.preflightDataSignal.set(null);
     }
 
     /**

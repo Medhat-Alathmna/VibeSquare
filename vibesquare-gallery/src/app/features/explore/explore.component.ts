@@ -14,18 +14,21 @@ import { LayoutSwitcherComponent, LayoutType } from './components/layout-switche
 import { HeroSearchComponent, SearchEvent } from './components/hero-search/hero-search.component';
 import { AnalysisConfirmModalComponent, AnalysisConfirmModalData } from '../../shared/components/analysis-confirm-modal/analysis-confirm-modal.component';
 import { AnalysisResultModalComponent } from '../../shared/components/analysis-result-modal/analysis-result-modal.component';
-import { AnalysisV25ConfirmModalComponent, AnalysisV25ConfirmModalData } from '../../shared/components/analysis-v25-confirm-modal/analysis-v25-confirm-modal.component';
+import {
+  AnalysisV25ConfirmModalComponent,
+  AnalysisV25ConfirmModalData,
+  AnalysisV25ConfirmModalResult
+} from '../../shared/components/analysis-v25-confirm-modal/analysis-v25-confirm-modal.component';
 import { AnalysisProcessingModalComponent, AnalysisProcessingModalData } from '../../shared/components/analysis-processing-modal/analysis-processing-modal.component';
 import { PrdResultModalComponent, PrdResultModalData } from '../../shared/components/prd-result-modal/prd-result-modal.component';
 import { QuotaExceededModalComponent, QuotaExceededModalData } from '../../shared/components/quota-exceeded-modal/quota-exceeded-modal.component';
 import {
   AnalysisV25Request,
   AnalysisV25Result,
-  ClarificationResponse,
+  PreflightData,
   FallbackRequest,
   ConfidenceData
 } from '../../core/models/prd.model';
-import { ClarificationModalComponent, ClarificationModalData } from '../../shared/components/clarification-modal/clarification-modal.component';
 import { FallbackApprovalDialogComponent, FallbackApprovalResult } from '../../shared/components/fallback-approval-dialog/fallback-approval-dialog.component';
 
 @Component({
@@ -59,6 +62,7 @@ export class ExploreComponent implements OnInit {
   // Analysis state
   isAnalyzing = this.prdService.state;
   isEstimating = signal<boolean>(false);
+  isPreflighting = signal<boolean>(false);
 
   // Processing modal overlay reference
   private processingOverlayRef: OverlayRef | null = null;
@@ -66,8 +70,7 @@ export class ExploreComponent implements OnInit {
   // Loading toast ID for estimate
   private estimateToastId: string | null = null;
 
-  // V2.5 clarification/fallback state
-  private currentResumeToken: string | null = null;
+  // V2.5 state
   private currentSearchEvent: SearchEvent | null = null;
   private lastConfidenceData: ConfidenceData | null = null;
 
@@ -116,9 +119,9 @@ export class ExploreComponent implements OnInit {
           if (event.pipelineType === 'visual') {
             this.showOldConfirmModal(event, response.data);
           }
-          // Technical/Both → use V2.5 confirm modal + V2.5 analysis
+          // Technical/Both → run preflight then show V2.5 confirm modal
           else {
-            this.showV25ConfirmationModal(event, response.data);
+            this.runPreflightAndShowModal(event, response.data);
           }
         }
       },
@@ -136,6 +139,25 @@ export class ExploreComponent implements OnInit {
           const message = error.error?.message || 'Failed to estimate analysis cost';
           this.toastService.error(message);
         }
+      }
+    });
+  }
+
+  private runPreflightAndShowModal(event: SearchEvent, estimate: any): void {
+    const toastId = this.toastService.loading('Analyzing design patterns...');
+    this.isPreflighting.set(true);
+
+    this.prdService.preflight(event.url).subscribe({
+      next: (response) => {
+        this.toastService.dismiss(toastId);
+        this.isPreflighting.set(false);
+        this.showV25ConfirmationModal(event, estimate, response.data);
+      },
+      error: () => {
+        this.toastService.dismiss(toastId);
+        this.isPreflighting.set(false);
+        this.toastService.warning('Design analysis unavailable. You can still generate the PRD.');
+        this.showV25ConfirmationModal(event, estimate, null);
       }
     });
   }
@@ -247,7 +269,7 @@ export class ExploreComponent implements OnInit {
     });
   }
 
-  private showV25ConfirmationModal(event: SearchEvent, estimate: any): void {
+  private showV25ConfirmationModal(event: SearchEvent, estimate: any, preflightData: PreflightData | null): void {
     const config = new OverlayConfig({
       hasBackdrop: true,
       backdropClass: 'modal-backdrop',
@@ -269,14 +291,15 @@ export class ExploreComponent implements OnInit {
       pipelineType: event.pipelineType,
       detailLevel: event.detailLevel,
       tokensRemaining: this.quotaService.tokensRemaining(),
-      estimatedTokens: estimate?.estimatedTokens || 0
+      estimatedTokens: estimate?.estimatedTokens || 0,
+      preflightData
     } as AnalysisV25ConfirmModalData;
 
     // Set close function
-    componentRef.instance.close = (confirmed?: boolean) => {
+    componentRef.instance.close = (result?: AnalysisV25ConfirmModalResult) => {
       overlayRef.dispose();
-      if (confirmed) {
-        this.executeV25Analysis(event);
+      if (result?.confirmed) {
+        this.executeV25Analysis(event, result);
       } else {
         this.prdService.cancel();
       }
@@ -297,8 +320,8 @@ export class ExploreComponent implements OnInit {
     });
   }
 
-  private executeV25Analysis(event: SearchEvent): void {
-    // Store current search event for use in clarification/fallback flows
+  private executeV25Analysis(event: SearchEvent, modalResult: AnalysisV25ConfirmModalResult): void {
+    // Store current search event for use in fallback flows
     this.currentSearchEvent = event;
     this.lastConfidenceData = null;
 
@@ -307,13 +330,16 @@ export class ExploreComponent implements OnInit {
 
     const request: AnalysisV25Request = {
       url: event.url,
-      pipelineType: event.pipelineType,
-      detailLevel: event.detailLevel
+      pipelineType: modalResult.pipelineType,
+      detailLevel: modalResult.detailLevel,
+      apiStyle: modalResult.apiStyle,
+      clarificationResponses: modalResult.clarificationResponses.length > 0
+        ? modalResult.clarificationResponses
+        : undefined
     };
 
     this.prdService.analyzeV25(request).subscribe({
       next: (response) => {
-        // Use V2.5 response handler for proper status handling
         this.handleV25Response(response);
       },
       error: (error) => {
@@ -463,94 +489,8 @@ export class ExploreComponent implements OnInit {
   }
 
   // ============================================
-  // V2.5 Clarification & Fallback Methods
+  // V2.5 Fallback Methods
   // ============================================
-
-  private showClarificationModal(
-    questions: ClarificationModalData['questions'],
-    overallConfidence: number,
-    resumeToken: string
-  ): void {
-    const config = new OverlayConfig({
-      hasBackdrop: true,
-      backdropClass: 'modal-backdrop',
-      panelClass: 'modal-panel',
-      positionStrategy: this.overlay.position()
-        .global()
-        .centerHorizontally()
-        .centerVertically(),
-      scrollStrategy: this.overlay.scrollStrategies.block()
-    });
-
-    const overlayRef = this.overlay.create(config);
-    const portal = new ComponentPortal(ClarificationModalComponent);
-    const componentRef = overlayRef.attach(portal);
-
-    // Set data
-    componentRef.instance.data = {
-      questions,
-      overallConfidence
-    } as ClarificationModalData;
-
-    // Set close function
-    componentRef.instance.close = (responses?: ClarificationResponse[] | null) => {
-      overlayRef.dispose();
-
-      if (responses && responses.length > 0) {
-        // User provided answers, submit clarifications
-        this.submitClarifications(resumeToken, responses);
-      } else {
-        // User skipped, continue without clarifications
-        this.continuePipelineWithoutClarifications(resumeToken);
-      }
-    };
-
-    // Close on escape key (acts as skip)
-    overlayRef.keydownEvents().subscribe(event => {
-      if (event.key === 'Escape') {
-        overlayRef.dispose();
-        this.continuePipelineWithoutClarifications(resumeToken);
-      }
-    });
-  }
-
-  private submitClarifications(_resumeToken: string, clarifications: ClarificationResponse[]): void {
-    // Show processing modal again
-    if (this.currentSearchEvent) {
-      this.showProcessingModal(this.currentSearchEvent);
-    }
-
-    // resumeToken is already set in prdService via SSE updates
-    this.prdService.submitClarifications(clarifications).subscribe({
-      next: (response) => {
-        this.handleV25Response(response);
-      },
-      error: (error) => {
-        this.closeProcessingModal();
-        const message = error.error?.message || 'Failed to submit clarifications';
-        this.toastService.error(message);
-      }
-    });
-  }
-
-  private continuePipelineWithoutClarifications(_resumeToken: string): void {
-    // Continue with empty clarifications (skip all)
-    if (this.currentSearchEvent) {
-      this.showProcessingModal(this.currentSearchEvent);
-    }
-
-    // resumeToken is already set in prdService via SSE updates
-    this.prdService.submitClarifications([]).subscribe({
-      next: (response) => {
-        this.handleV25Response(response);
-      },
-      error: (error) => {
-        this.closeProcessingModal();
-        const message = error.error?.message || 'Failed to continue pipeline';
-        this.toastService.error(message);
-      }
-    });
-  }
 
   private showFallbackApprovalDialog(fallbackRequest: FallbackRequest): void {
     // Close processing modal first
@@ -577,19 +517,19 @@ export class ExploreComponent implements OnInit {
     // Set close function
     componentRef.instance.close = (result: FallbackApprovalResult) => {
       overlayRef.dispose();
-      this.handleFallbackDecision(fallbackRequest.resumeToken, result);
+      this.handleFallbackDecision(result);
     };
 
     // Close on escape key (acts as decline)
     overlayRef.keydownEvents().subscribe(event => {
       if (event.key === 'Escape') {
         overlayRef.dispose();
-        this.handleFallbackDecision(fallbackRequest.resumeToken, { approved: false });
+        this.handleFallbackDecision({ approved: false });
       }
     });
   }
 
-  private handleFallbackDecision(_resumeToken: string, result: FallbackApprovalResult): void {
+  private handleFallbackDecision(result: FallbackApprovalResult): void {
     // Show processing modal again
     if (this.currentSearchEvent) {
       this.showProcessingModal(this.currentSearchEvent);
@@ -616,21 +556,8 @@ export class ExploreComponent implements OnInit {
 
     // Handle different statuses
     switch (response.status) {
-      case 'needs_clarification':
-        this.closeProcessingModal();
-        if (response.questionsForUser && response.resumeToken) {
-          this.currentResumeToken = response.resumeToken;
-          this.showClarificationModal(
-            response.questionsForUser,
-            response.confidence?.overallScore || 0,
-            response.resumeToken
-          );
-        }
-        break;
-
       case 'fallback_required':
         if (response.fallbackRequest) {
-          this.currentResumeToken = response.fallbackRequest.resumeToken;
           this.showFallbackApprovalDialog(response.fallbackRequest);
         }
         break;
@@ -703,7 +630,6 @@ export class ExploreComponent implements OnInit {
   }
 
   private resetV25State(): void {
-    this.currentResumeToken = null;
     this.currentSearchEvent = null;
     this.lastConfidenceData = null;
   }

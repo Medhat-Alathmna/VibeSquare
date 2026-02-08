@@ -1,12 +1,17 @@
-import { Component, signal, inject, OnInit } from '@angular/core';
+import { Component, signal, computed, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ButtonComponent } from '../button/button.component';
 import {
     PipelineType,
     DetailLevel,
+    ApiStyle,
     PIPELINE_TYPE_OPTIONS,
     DETAIL_LEVEL_OPTIONS,
-    getEstimatedTime
+    getEstimatedTime,
+    PreflightData,
+    PreflightQuestion,
+    PreflightClarificationResponse
 } from '../../../core/models/prd.model';
 import { PrdService } from '../../../core/services/prd.service';
 
@@ -16,12 +21,21 @@ export interface AnalysisV25ConfirmModalData {
     detailLevel: DetailLevel;
     tokensRemaining: number;
     estimatedTokens?: number;
+    preflightData: PreflightData | null;
+}
+
+export interface AnalysisV25ConfirmModalResult {
+    confirmed: boolean;
+    pipelineType: PipelineType;
+    detailLevel: DetailLevel;
+    apiStyle: ApiStyle;
+    clarificationResponses: PreflightClarificationResponse[];
 }
 
 @Component({
     selector: 'app-analysis-v25-confirm-modal',
     standalone: true,
-    imports: [CommonModule, ButtonComponent],
+    imports: [CommonModule, FormsModule, ButtonComponent],
     templateUrl: './analysis-v25-confirm-modal.component.html',
     styleUrls: ['./analysis-v25-confirm-modal.component.css']
 })
@@ -30,10 +44,39 @@ export class AnalysisV25ConfirmModalComponent implements OnInit {
 
     // These will be set by the modal opener
     data!: AnalysisV25ConfirmModalData;
-    close!: (result?: boolean) => void;
+    close!: (result?: AnalysisV25ConfirmModalResult) => void;
 
     isProcessing = signal(false);
     cachedResultAvailable = signal<boolean>(false);
+
+    // Preflight answer tracking
+    answers = signal<Map<string, string[]>>(new Map());
+    customAnswers = signal<Map<string, string>>(new Map());
+    selectedApiStyle = signal<ApiStyle>('REST');
+
+    // Computed: group questions by priority
+    criticalQuestions = computed(() =>
+        this.preflightQuestions().filter(q => q.priority === 'critical')
+    );
+    importantQuestions = computed(() =>
+        this.preflightQuestions().filter(q => q.priority === 'important')
+    );
+    optionalQuestions = computed(() =>
+        this.preflightQuestions().filter(q => q.priority === 'optional')
+    );
+    answeredCount = computed(() => this.answers().size);
+
+    get hasPreflightData(): boolean {
+        return !!this.data.preflightData;
+    }
+
+    get visualSummary() {
+        return this.data.preflightData?.visualSummary ?? null;
+    }
+
+    preflightQuestions(): PreflightQuestion[] {
+        return this.data.preflightData?.questions ?? [];
+    }
 
     get estimatedTime(): string {
         return getEstimatedTime(this.data.pipelineType, this.data.detailLevel);
@@ -92,12 +135,24 @@ export class AnalysisV25ConfirmModalComponent implements OnInit {
         if (this.data?.url) {
             this.checkCachedResult(this.data.url);
         }
+        // Pre-select recommended options
+        if (this.data?.preflightData?.questions) {
+            const initialAnswers = new Map<string, string[]>();
+            for (const question of this.data.preflightData.questions) {
+                const recommended = question.options
+                    .filter(o => o.isRecommended)
+                    .map(o => o.value);
+                if (recommended.length > 0) {
+                    initialAnswers.set(question.id, recommended);
+                }
+            }
+            this.answers.set(initialAnswers);
+        }
     }
 
     private checkCachedResult(url: string): void {
         this.prdService.checkCache(url).subscribe({
             next: (response) => {
-                // Backend validates cache TTL and returns cache status
                 if (response.success && response.data) {
                     this.cachedResultAvailable.set(response.data.cached);
                 }
@@ -108,13 +163,86 @@ export class AnalysisV25ConfirmModalComponent implements OnInit {
         });
     }
 
+    toggleOption(questionId: string, value: string, allowMultiple: boolean): void {
+        this.answers.update(map => {
+            const newMap = new Map(map);
+            const current = newMap.get(questionId) || [];
+
+            if (allowMultiple) {
+                // Toggle checkbox
+                if (current.includes(value)) {
+                    const filtered = current.filter(v => v !== value);
+                    if (filtered.length > 0) {
+                        newMap.set(questionId, filtered);
+                    } else {
+                        newMap.delete(questionId);
+                    }
+                } else {
+                    newMap.set(questionId, [...current, value]);
+                }
+            } else {
+                // Radio: replace
+                newMap.set(questionId, [value]);
+            }
+
+            return newMap;
+        });
+    }
+
+    isOptionSelected(questionId: string, value: string): boolean {
+        return this.answers().get(questionId)?.includes(value) ?? false;
+    }
+
+    updateCustomAnswer(questionId: string, value: string): void {
+        this.customAnswers.update(map => {
+            const newMap = new Map(map);
+            if (value.trim()) {
+                newMap.set(questionId, value);
+            } else {
+                newMap.delete(questionId);
+            }
+            return newMap;
+        });
+    }
+
+    getCustomAnswer(questionId: string): string {
+        return this.customAnswers().get(questionId) ?? '';
+    }
+
+    private buildClarificationResponses(): PreflightClarificationResponse[] {
+        const responses: PreflightClarificationResponse[] = [];
+        const answersMap = this.answers();
+        const customMap = this.customAnswers();
+
+        for (const question of this.preflightQuestions()) {
+            const selected = answersMap.get(question.id);
+            const custom = customMap.get(question.id);
+
+            if (selected?.length || custom) {
+                responses.push({
+                    questionId: question.id,
+                    selectedValues: selected || [],
+                    customAnswer: custom || undefined
+                });
+            }
+        }
+
+        return responses;
+    }
+
     onConfirm(): void {
         if (!this.hasEnoughTokens) return;
         this.isProcessing.set(true);
-        this.close(true);
+        this.close({
+            confirmed: true,
+            pipelineType: this.data.pipelineType,
+            detailLevel: this.data.detailLevel,
+            apiStyle: this.selectedApiStyle(),
+            clarificationResponses: this.buildClarificationResponses()
+        });
     }
 
     onCancel(): void {
-        this.close(false);
+        this.close(undefined);
     }
 }

@@ -161,13 +161,13 @@ export class AnalysisProcessingModalComponent implements OnInit, OnDestroy {
 
             this.siteMetadata.set({
                 title: this.capitalizeFirstLetter(hostname),
-                description: `جاري تحليل ${hostname}...`,
+                description: `Analyzing ${hostname}...`,
                 screenshot: undefined // Will be set from backend if available
             });
         } catch (error) {
             this.siteMetadata.set({
                 title: this.data.url,
-                description: 'جاري تحليل الموقع...',
+                description: 'Analyzing website...',
                 screenshot: undefined
             });
         }

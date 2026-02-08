@@ -12,7 +12,10 @@
       "Bash(ls:*)",
       "Bash(npm start)",
       "Bash(tree:*)",
-      "Bash(find:*)"
+      "Bash(find:*)",
+      "Bash(del \"C:\\\\Work\\\\AI-Eng\\\\VibeSquare\\\\vibesquare-gallery\\\\src\\\\app\\\\shared\\\\components\\\\clarification-modal\\\\clarification-modal.component.ts\")",
+      "Bash(npm test:*)",
+      "Bash(npx vitest:*)"
     ]
   }
 }
