@@ -7,26 +7,23 @@ import {
     PipelineType,
     DetailLevel,
     getEstimatedTime,
-    AgentConfidence,
-    getConfidenceIcon,
-    formatAgentName,
     getCacheBadgeInfo,
     CacheBadgeInfo
 } from '../../../core/models/prd.model';
 import { ConfidenceBadgeComponent } from '../confidence-badge/confidence-badge.component';
+import { ANALYSIS_TIPS, TIP_ROTATION_INTERVAL } from '../../../core/constants/analysis-tips';
 
 export interface AnalysisProcessingModalData {
     url: string;
     pipelineType: PipelineType;
     detailLevel: DetailLevel;
-    jobId?: string; // Optional job ID for SSE connection
+    jobId?: string;
 }
 
-interface ProcessingStep {
-    label: string;
-    description: string;
-    threshold: number;
-    agentName?: string; // Map to agent for confidence display
+interface SiteMetadata {
+    title?: string;
+    description?: string;
+    screenshot?: string;
 }
 
 @Component({
@@ -50,8 +47,6 @@ export class AnalysisProcessingModalComponent implements OnInit, OnDestroy {
     state = this.prdService.state;
 
     // V2.5 Confidence data from service
-    completedAgents = this.prdService.completedAgents;
-    currentAgent = this.prdService.currentAgent;
     overallConfidence = this.prdService.overallConfidenceScore;
     sseConnectionState = this.sseService.connectionState;
 
@@ -64,40 +59,20 @@ export class AnalysisProcessingModalComponent implements OnInit, OnDestroy {
     elapsedSeconds = signal<number>(0);
     private elapsedInterval: ReturnType<typeof setInterval> | null = null;
 
+    // Tips rotation
+    currentTipIndex = signal<number>(0);
+    currentTip = computed(() => ANALYSIS_TIPS[this.currentTipIndex()]);
+    private tipInterval: ReturnType<typeof setInterval> | null = null;
+
+    // Site metadata (will be extracted or received from backend)
+    siteMetadata = signal<SiteMetadata>({
+        title: undefined,
+        description: undefined,
+        screenshot: undefined
+    });
+
     // Cancel confirmation
     showCancelConfirm = signal(false);
-
-    // Processing steps based on pipeline type with agent mapping
-    get steps(): ProcessingStep[] {
-        if (this.data.pipelineType === 'visual') {
-            return [
-                { label: 'Capturing page', description: 'Taking screenshot & extracting DOM', threshold: 15 },
-                { label: 'Analyzing design', description: 'Identifying layout & components', threshold: 40, agentName: 'identity' },
-                { label: 'Generating specs', description: 'Creating visual specifications', threshold: 70 },
-                { label: 'Finalizing', description: 'Preparing PRD document', threshold: 90, agentName: 'prdValidator' }
-            ];
-        } else if (this.data.pipelineType === 'technical') {
-            return [
-                { label: 'Analyzing structure', description: 'Parsing UI components', threshold: 10, agentName: 'identity' },
-                { label: 'Database schema', description: 'Inferring data models', threshold: 30, agentName: 'database' },
-                { label: 'Backend design', description: 'Generating API & security specs', threshold: 55, agentName: 'backend' },
-                { label: 'QA validation', description: 'Verifying alignment', threshold: 80, agentName: 'qa' },
-                { label: 'Finalizing', description: 'Compiling PRD document', threshold: 90, agentName: 'prdValidator' }
-            ];
-        } else {
-            // 'both' - full pipeline
-            return [
-                { label: 'Identity Analysis', description: 'Product vision & problem', threshold: 8, agentName: 'identity' },
-                { label: 'Database Schema', description: 'Inferring data models', threshold: 25, agentName: 'database' },
-                { label: 'Backend Design', description: 'API & architecture', threshold: 40, agentName: 'backend' },
-                { label: 'Security Analysis', description: 'Security recommendations', threshold: 50, agentName: 'security' },
-                { label: 'User Stories', description: 'Feature breakdown', threshold: 60, agentName: 'userStory' },
-                { label: 'DevOps Config', description: 'Infrastructure setup', threshold: 70, agentName: 'devops' },
-                { label: 'QA Validation', description: 'Quality assurance', threshold: 85, agentName: 'qa' },
-                { label: 'Finalizing', description: 'Compiling PRD document', threshold: 95, agentName: 'prdValidator' }
-            ];
-        }
-    }
 
     get estimatedTime(): string {
         return getEstimatedTime(this.data.pipelineType, this.data.detailLevel);
@@ -110,24 +85,6 @@ export class AnalysisProcessingModalComponent implements OnInit, OnDestroy {
         return mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
     }
 
-    get currentStepIndex(): number {
-        const currentProgress = this.progress();
-        for (let i = this.steps.length - 1; i >= 0; i--) {
-            if (currentProgress >= this.steps[i].threshold) {
-                return Math.min(i + 1, this.steps.length - 1);
-            }
-        }
-        return 0;
-    }
-
-    get currentStepLabel(): string {
-        const agent = this.currentAgent();
-        if (agent) {
-            return formatAgentName(agent);
-        }
-        return this.steps[this.currentStepIndex]?.label || 'Processing...';
-    }
-
     get cacheBadgeInfo(): CacheBadgeInfo | null {
         const status = this.cacheStatus();
         if (status) {
@@ -136,9 +93,22 @@ export class AnalysisProcessingModalComponent implements OnInit, OnDestroy {
         return null;
     }
 
+    // Lottie animation options
+    lottieOptions = {
+        path: '/assets/animations/analyzing.json',
+        loop: true,
+        autoplay: true
+    };
+
     ngOnInit(): void {
         // Start elapsed time tracking
         this.startElapsedTimer();
+
+        // Start tips rotation
+        this.startTipRotation();
+
+        // Extract site metadata from URL (basic extraction)
+        this.extractSiteMetadata();
 
         // Connect to SSE if job ID is provided
         if (this.data.jobId) {
@@ -148,6 +118,7 @@ export class AnalysisProcessingModalComponent implements OnInit, OnDestroy {
 
     ngOnDestroy(): void {
         this.stopElapsedTimer();
+        this.stopTipRotation();
         this.sseSubscription?.unsubscribe();
         this.sseService.disconnect();
     }
@@ -167,57 +138,66 @@ export class AnalysisProcessingModalComponent implements OnInit, OnDestroy {
         }
     }
 
+    private startTipRotation(): void {
+        // Shuffle tips on init for variety
+        this.currentTipIndex.set(Math.floor(Math.random() * ANALYSIS_TIPS.length));
+
+        this.tipInterval = setInterval(() => {
+            this.currentTipIndex.update(i => (i + 1) % ANALYSIS_TIPS.length);
+        }, TIP_ROTATION_INTERVAL);
+    }
+
+    private stopTipRotation(): void {
+        if (this.tipInterval) {
+            clearInterval(this.tipInterval);
+            this.tipInterval = null;
+        }
+    }
+
+    private extractSiteMetadata(): void {
+        try {
+            const url = new URL(this.data.url);
+            const hostname = url.hostname.replace('www.', '');
+
+            this.siteMetadata.set({
+                title: this.capitalizeFirstLetter(hostname),
+                description: `جاري تحليل ${hostname}...`,
+                screenshot: undefined // Will be set from backend if available
+            });
+        } catch (error) {
+            this.siteMetadata.set({
+                title: this.data.url,
+                description: 'جاري تحليل الموقع...',
+                screenshot: undefined
+            });
+        }
+    }
+
+    private capitalizeFirstLetter(str: string): string {
+        return str.charAt(0).toUpperCase() + str.slice(1);
+    }
+
     private connectToSSE(jobId: string): void {
         this.sseSubscription = this.sseService.streamPipelineUpdates(jobId).subscribe({
             next: (update) => {
-                // Updates are handled by SseService -> PrdService
                 console.log('SSE Update:', update);
+
+                // Update site metadata if received from backend
+                if (update.type === 'agent_started' && (update as any).siteMetadata) {
+                    const meta = (update as any).siteMetadata;
+                    this.siteMetadata.update(current => ({
+                        ...current,
+                        ...meta
+                    }));
+                }
             },
             error: (error) => {
                 console.error('SSE Error:', error);
-                // Fallback to simulation if SSE fails
             },
             complete: () => {
                 console.log('SSE Stream completed');
             }
         });
-    }
-
-    isStepComplete(stepIndex: number): boolean {
-        const step = this.steps[stepIndex];
-
-        // Check if this step's agent is in completed agents
-        if (step.agentName) {
-            const completed = this.completedAgents();
-            return completed.some(a => a.name === step.agentName);
-        }
-
-        return this.progress() >= step.threshold;
-    }
-
-    isStepActive(stepIndex: number): boolean {
-        const step = this.steps[stepIndex];
-        const agent = this.currentAgent();
-
-        // Check if this step's agent is currently running
-        if (step.agentName && agent) {
-            return step.agentName === agent;
-        }
-
-        return stepIndex === this.currentStepIndex && !this.isStepComplete(stepIndex);
-    }
-
-    getAgentConfidence(agentName: string | undefined): AgentConfidence | undefined {
-        if (!agentName) return undefined;
-        return this.completedAgents().find(a => a.name === agentName);
-    }
-
-    getConfidenceIcon(agentName: string | undefined): string {
-        const agent = this.getAgentConfidence(agentName);
-        if (agent) {
-            return getConfidenceIcon(agent.level);
-        }
-        return '';
     }
 
     onCancelClick(): void {

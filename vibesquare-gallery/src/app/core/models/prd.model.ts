@@ -122,7 +122,6 @@ export interface PrdDetail extends PrdListItem {
   };
   databaseSchema?: string;
   backendArchitecture?: string;
-  securityRecommendations?: string;
   testingStrategy?: string;
   devopsConfig?: string;
   validationResult?: string;
@@ -383,7 +382,6 @@ export function formatAgentName(name: string): string {
     identity: 'Identity Agent',
     database: 'Database Agent',
     backend: 'Backend Agent',
-    security: 'Security Agent',
     testing: 'Testing Agent',
     devops: 'DevOps Agent',
     userStory: 'User Story Agent',
